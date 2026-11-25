@@ -1,0 +1,118 @@
+{
+  "version": "1.0.0",
+  "year": 2024,
+  "source": "Ministry of Health & Family Welfare (MoHFW) & National Centre for Disease Control (NCDC) India Air Quality Health Advisories; CPCB NAQI",
+  "disclaimer": "Informational guidance only — not medical advice. Consult a qualified doctor or healthcare professional for symptoms, diagnosis, or treatment.",
+  "categories": [
+    {
+      "id": "good",
+      "naqiRange": [0, 50],
+      "usAqiRange": [0, 50],
+      "label": "Good",
+      "icon": "🟢",
+      "generalAdvice": "Air quality is satisfactory with minimal impact. Normal outdoor activity and natural cross-ventilation are generally appropriate.",
+      "familyAdvice": {
+        "children": "Normal outdoor play is fine; continue routine hydration and clean indoor cooking habits.",
+        "older_adults": "Normal walks and light outdoor activity are suitable.",
+        "breathing_heart": "Routine daily activities are generally comfortable; keep prescribed rescue medication accessible as usual.",
+        "pregnancy": "Normal outdoor light activity and fresh-air ventilation are suitable."
+      }
+    },
+    {
+      "id": "satisfactory",
+      "naqiRange": [51, 100],
+      "usAqiRange": [51, 100],
+      "label": "Satisfactory",
+      "icon": "🟡",
+      "generalAdvice": "Acceptable air quality, though unusually sensitive people may experience minor breathing discomfort on prolonged exertion.",
+      "familyAdvice": {
+        "children": "Outdoor play is okay, but prefer lower-traffic hours and avoid playing next to busy roads.",
+        "older_adults": "Keep brisk walks to early morning or cleaner hours; rest if tired.",
+        "breathing_heart": "Consider shortening intense outdoor exertion and keep indoor cooking exhaust running.",
+        "pregnancy": "Prefer parks or low-traffic streets during cleaner hours; avoid passive smoke and incense indoors."
+      }
+    },
+    {
+      "id": "moderate",
+      "naqiRange": [101, 200],
+      "usAqiRange": [101, 150],
+      "label": "Moderate",
+      "icon": "🟠",
+      "generalAdvice": "May cause breathing discomfort to people with lung or heart conditions, children, and older adults. Time outdoor activities to the cleanest hours.",
+      "familyAdvice": {
+        "children": "Limit vigorous outdoor sports during peak traffic hours; use indoor play during afternoon/evening spikes.",
+        "older_adults": "Shift walks indoors or to the cleanest low-PM window; monitor for breathlessness or fatigue.",
+        "breathing_heart": "Reduce outdoor exertion, wear a well-fitted N95/KN95 mask outdoors if needed, and run HEPA filtration in the sleeping room.",
+        "pregnancy": "Minimize time near traffic corridors; ventilate only during the cleanest 2-3 hour window and run indoor filtration."
+      }
+    },
+    {
+      "id": "poor",
+      "naqiRange": [201, 300],
+      "usAqiRange": [151, 200],
+      "label": "Poor",
+      "icon": "🔴",
+      "generalAdvice": "May cause breathing discomfort to most people on prolonged exposure. Keep windows closed during peak hours and shift strenuous activity indoors.",
+      "familyAdvice": {
+        "children": "Keep children indoors during smog peaks; avoid outdoor school/park sports and maintain a filtered clean room.",
+        "older_adults": "Stay indoors as much as possible; avoid early-morning cold smog if PM2.5 is high and keep living spaces sealed.",
+        "breathing_heart": "Stay indoors with a clean-room HEPA purifier running; avoid all outdoor exertion and contact your physician promptly if symptoms worsen.",
+        "pregnancy": "Avoid outdoor exposure during poor-AQI hours; use a properly sized HEPA purifier in the bedroom and avoid incense/smoke."
+      }
+    },
+    {
+      "id": "very_poor",
+      "naqiRange": [301, 400],
+      "usAqiRange": [201, 300],
+      "label": "Very Poor",
+      "icon": "🟣",
+      "generalAdvice": "May cause respiratory illness on prolonged exposure. Avoid outdoor physical exertion, seal leaky windows, and prioritize a clean room indoors.",
+      "familyAdvice": {
+        "children": "Keep indoors continuously during episode; set up the bedroom as a clean room and avoid dry sweeping.",
+        "older_adults": "Remain indoors in a filtered room; avoid sudden cold air drafts and wear a fitted N95 if stepping out is unavoidable.",
+        "breathing_heart": "High risk of symptom flare-ups; stay in a filtered clean room, keep emergency care plan handy, and consult your doctor proactively.",
+        "pregnancy": "Stay indoors in a clean room with continuous HEPA filtration and zero indoor combustion or fragrance sprays."
+      }
+    },
+    {
+      "id": "severe",
+      "naqiRange": [401, 500],
+      "usAqiRange": [301, 500],
+      "label": "Severe",
+      "icon": "⚫",
+      "generalAdvice": "Health emergency conditions: everyone may be affected. Stay indoors, keep windows closed, run air filtration continuously, and use fitted N95 masks if travel is unavoidable.",
+      "familyAdvice": {
+        "children": "Strictly keep indoors in a sealed clean room; postpone non-essential outdoor travel and monitor closely for cough or wheezing.",
+        "older_adults": "Remain in the cleanest indoor room with continuous HEPA filtration; seek medical attention immediately for chest discomfort or shortness of breath.",
+        "breathing_heart": "Emergency-level precaution: stay in a continuous HEPA clean room, avoid all outdoor air, and follow your physician's action plan.",
+        "pregnancy": "Remain indoors in a filtered clean room, eliminate all indoor smoke/frying fumes, and wear an N95 mask if essential travel is required."
+      }
+    }
+  ],
+  "familyProfiles": [
+    {
+      "id": "children",
+      "label": "Children & infants",
+      "icon": "👶",
+      "rationale": "Higher breathing rate per kg body weight and developing lungs increase sensitivity to fine particulate matter."
+    },
+    {
+      "id": "older_adults",
+      "label": "Older adults (65+)",
+      "icon": "👴",
+      "rationale": "Age-related cardiovascular and respiratory changes increase sensitivity during high-PM2.5 episodes."
+    },
+    {
+      "id": "breathing_heart",
+      "label": "Breathing or heart conditions",
+      "icon": "🫁",
+      "rationale": "Conditions like asthma, COPD, bronchitis, or cardiovascular disease are aggravated by PM2.5 spikes."
+    },
+    {
+      "id": "pregnancy",
+      "label": "Pregnancy",
+      "icon": "🤰",
+      "rationale": "Reducing sustained PM2.5 exposure helps protect maternal respiratory comfort and household air quality."
+    }
+  ]
+}

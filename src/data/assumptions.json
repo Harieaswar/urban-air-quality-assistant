@@ -1,0 +1,106 @@
+{
+  "version": "1.0.0",
+  "year": 2024,
+  "who2021": {
+    "source": "WHO Global Air Quality Guidelines (2021)",
+    "pm25_24h_ugm3": 15,
+    "pm25_annual_ugm3": 5,
+    "pm10_24h_ugm3": 45
+  },
+  "defaults": {
+    "source": "SmogGuard Conservative Household Defaults (compiled from BEE 2023, CEA v18, PPAC 2023, WHO/ASHRAE room guidelines)",
+    "ceilingHeightM": 2.8,
+    "targetACH": 5,
+    "purifierWatts": 55,
+    "purifierHoursPerDay": 12,
+    "electricityRatePerKwh": 7.5,
+    "lpgCylinderKg": 14.2,
+    "lpgCylinderPrice": 903,
+    "pngRatePerM3": 28,
+    "dieselRatePerLitre": 94,
+    "petrolRatePerLitre": 103,
+    "weeksPerYear": 52,
+    "conservativeUnknowns": {
+      "homeType": "apartment",
+      "ventilation": "moderate",
+      "cooling": "ac",
+      "rentalLimits": true,
+      "householdSize": 4,
+      "sensitiveGroups": ["children"],
+      "goals": ["cleaner_air", "cut_emissions"],
+      "budget": "medium",
+      "effort": "medium",
+      "roomAreaSqM": 16,
+      "ceilingHeightM": 2.8,
+      "cookingFuel": "lpg",
+      "hasChimney": "none",
+      "indoorSmokeSources": ["incense"],
+      "commuteMode": "two_wheeler",
+      "commuteKm": 12,
+      "commuteDays": 5,
+      "monthlyKwh": 250,
+      "diet": "vegetarian",
+      "wasteHabits": "no_segregation",
+      "outdoorExerciseTiming": "morning"
+    }
+  },
+  "sampleSevereSmog": {
+    "id": "delhi_winter_smog_demo",
+    "label": "Sample Severe-Smog Day (NCR Winter Episode Pattern)",
+    "locationName": "New Delhi (Sample Severe-Smog Demo)",
+    "lat": 28.6,
+    "lon": 77.2,
+    "source": "Illustrative severe winter smog diurnal profile anchored to CPCB / CAMS NCR episode ranges (not live data)",
+    "year": 2023,
+    "weather": {
+      "temperatureC": 14.5,
+      "humidityPct": 78,
+      "windSpeedKmh": 4.2
+    },
+    "hourlyPm25": [
+      295, 280, 265, 250, 235, 215,
+      195, 210, 260, 290, 270, 240,
+      205, 185, 175, 190, 225, 275,
+      335, 385, 410, 390, 355, 320
+    ]
+  },
+  "dataSources": [
+    {
+      "name": "Open-Meteo Geocoding API",
+      "license": "CC BY 4.0 / Keyless Public API",
+      "purpose": "Client-side place search with 0.1° coordinate rounding"
+    },
+    {
+      "name": "Open-Meteo Air Quality API (CAMS Global/Regional)",
+      "license": "Copernicus Atmosphere Monitoring Service (CAMS) CC BY 4.0",
+      "purpose": "24-hour hourly PM2.5 and PM10 forecast"
+    },
+    {
+      "name": "Open-Meteo Weather Forecast API",
+      "license": "CC BY 4.0",
+      "purpose": "Temperature, relative humidity, and wind speed context"
+    },
+    {
+      "name": "MoHFW / NCDC India & CPCB NAQI",
+      "license": "Public Health Advisory Reference",
+      "purpose": "India NAQI breakpoints and family-group advisory guidance"
+    },
+    {
+      "name": "WHO Global Air Quality Guidelines (2021)",
+      "license": "WHO Reference",
+      "purpose": "24-hour PM2.5 guideline (15 µg/m³) ratio benchmark"
+    },
+    {
+      "name": "TERI, CEA v18, IPCC 2006, CPCB, BEE, PPAC",
+      "license": "Published Emission Factor Registries",
+      "purpose": "Transparent household carbon, energy, and savings calculations"
+    }
+  ],
+  "limitations": [
+    "Modeled CAMS air quality data at ~0.1° (~11 km) grid resolution smooths hyper-local roadside or construction spikes.",
+    "Manual monitor calibration scales the 24-hour curve uniformly around the selected hour; low-cost optical sensors can overestimate at high humidity (>75% RH).",
+    "Indoor Exposure Index is a transparent heuristic score (0–100), not a direct sensor measurement or clinical health risk score.",
+    "Health advisories summarize public MoHFW/NCDC guidance and are not medical advice.",
+    "INR cost ranges and payback estimates are planning benchmarks; verify current local equipment and tariff prices before purchase."
+  ]
+}
