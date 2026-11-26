@@ -1,7 +1,15 @@
 import React from 'react';
 
 /** Reusable button with variants */
-export default function Button({ children, variant = 'primary', onClick, disabled, icon, className = '', type = 'button' }) {
+export default function Button({
+  children,
+  variant = 'primary',
+  onClick,
+  disabled,
+  icon,
+  className = '',
+  type = 'button',
+}) {
   return (
     <button
       className={`btn btn--${variant} ${className}`}

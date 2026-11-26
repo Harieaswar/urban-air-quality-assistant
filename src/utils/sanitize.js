@@ -1,9 +1,16 @@
 /**
- * Input sanitization — SmogGuard
- * Strips HTML tags and limits length. No dangerouslySetInnerHTML used anywhere.
+ * @fileoverview Input sanitization helpers to strip markup and prevent injection.
  */
 
-export function sanitizeInput(text, maxLength = 200) {
+const DEFAULT_MAX_LEN = 200;
+
+/**
+ * Strip HTML tags/entities, trim whitespace, and enforce maximum length.
+ * @param {string} text - Raw user input string.
+ * @param {number} [maxLength=200] - Maximum allowed character count.
+ * @returns {string} Sanitized text.
+ */
+export function sanitizeInput(text, maxLength = DEFAULT_MAX_LEN) {
   if (typeof text !== 'string') return '';
   return text
     .replace(/<[^>]*>/g, '')
@@ -12,6 +19,11 @@ export function sanitizeInput(text, maxLength = 200) {
     .slice(0, maxLength);
 }
 
+/**
+ * Escape HTML special characters for plain-text rendering.
+ * @param {string} text - Input string.
+ * @returns {string} Escaped string.
+ */
 export function sanitizeForDisplay(text) {
   if (typeof text !== 'string') return '';
   return text

@@ -1,13 +1,17 @@
+/**
+ * @fileoverview Settings & Data Control Page for theme, AQI scale, JSON import/export, restart, and clear data.
+ */
+
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/state/AppContext';
 import GlassCard from '@/components/ui/GlassCard';
 import Button from '@/components/ui/Button';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 
 /**
- * Settings Page — SmogGuard
- * Theme (Dark / Light / Solid), AQI Scale (India NAQI / US AQI),
- * Export JSON, Import JSON, Restart with confirmation, and "Delete all my data".
+ * Render Settings page for appearance, default AQI scale, JSON import/export, restart, and clearing data.
+ * @returns {JSX.Element} Settings page.
  */
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -15,13 +19,8 @@ export default function SettingsPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [importStatus, setImportStatus] = useState('');
+  const [importError, setImportError] = useState(false);
   const fileInputRef = useRef(null);
-
-  const themes = [
-    { id: 'dark', label: '🌙 Dark' },
-    { id: 'light', label: '☀️ Light' },
-    { id: 'solid', label: '■ Solid' },
-  ];
 
   const handleExport = () => {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
@@ -43,11 +42,14 @@ export default function SettingsPage() {
         const parsed = JSON.parse(evt.target.result);
         const imported = parsed.profile ? parsed.profile : parsed;
         if (!imported || typeof imported !== 'object' || (!imported.location && !imported.family)) {
-          throw new Error('Invalid structure');
+          throw new Error('Missing required location or family sections in JSON');
         }
         dispatch({ type: 'IMPORT_STATE', payload: imported });
+        setImportError(false);
         setImportStatus('✅ Profile imported! Your wizard answers and report have been updated.');
-      } catch {
+      } catch (err) {
+        console.warn('Invalid JSON import:', err);
+        setImportError(true);
         setImportStatus('❌ Invalid file format. Please select a valid SmogGuard JSON export.');
       }
     };
@@ -60,39 +62,35 @@ export default function SettingsPage() {
 
       <section className="settings-group">
         <GlassCard>
-          <label className="settings-label">Appearance Theme (Glassmorphic / Light / Solid)</label>
-          <div className="theme-toggle-group" role="radiogroup" aria-label="Theme selection">
-            {themes.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                role="radio"
-                aria-checked={state.preferences.theme === t.id}
-                className={`theme-toggle-btn ${state.preferences.theme === t.id ? 'active' : ''}`}
-                onClick={() => dispatch({ type: 'UPDATE_PREFERENCES', payload: { theme: t.id } })}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+          <span className="settings-label">Appearance Theme (Glassmorphic / Light / Solid)</span>
+          <ThemeToggle
+            value={state.preferences.theme}
+            onChange={(theme) => dispatch({ type: 'UPDATE_PREFERENCES', payload: { theme } })}
+          />
         </GlassCard>
       </section>
 
       <section className="settings-group">
         <GlassCard>
-          <label className="settings-label">Default AQI Scale</label>
+          <span className="settings-label">Default AQI Scale</span>
           <div className="scale-toggle" role="group" aria-label="Default AQI scale">
             <button
               type="button"
               className={`scale-btn ${state.preferences.aqiScale === 'india_naqi' ? 'active' : ''}`}
-              onClick={() => dispatch({ type: 'UPDATE_PREFERENCES', payload: { aqiScale: 'india_naqi' } })}
+              aria-pressed={state.preferences.aqiScale === 'india_naqi'}
+              onClick={() =>
+                dispatch({ type: 'UPDATE_PREFERENCES', payload: { aqiScale: 'india_naqi' } })
+              }
             >
               India NAQI (CPCB)
             </button>
             <button
               type="button"
               className={`scale-btn ${state.preferences.aqiScale === 'us_aqi' ? 'active' : ''}`}
-              onClick={() => dispatch({ type: 'UPDATE_PREFERENCES', payload: { aqiScale: 'us_aqi' } })}
+              aria-pressed={state.preferences.aqiScale === 'us_aqi'}
+              onClick={() =>
+                dispatch({ type: 'UPDATE_PREFERENCES', payload: { aqiScale: 'us_aqi' } })
+              }
             >
               US AQI (EPA)
             </button>
@@ -102,7 +100,7 @@ export default function SettingsPage() {
 
       <section className="settings-group">
         <GlassCard>
-          <label className="settings-label">Export JSON Profile</label>
+          <span className="settings-label">Export JSON Profile</span>
           <p style={{ marginBottom: 'var(--space-md)', fontSize: 'var(--font-size-sm)' }}>
             Save your entire SmogGuard household profile and preferences to a local JSON file.
           </p>
@@ -114,7 +112,7 @@ export default function SettingsPage() {
 
       <section className="settings-group">
         <GlassCard>
-          <label className="settings-label">Import JSON Profile</label>
+          <span className="settings-label">Import JSON Profile</span>
           <p style={{ marginBottom: 'var(--space-md)', fontSize: 'var(--font-size-sm)' }}>
             Restore a previously exported SmogGuard JSON file.
           </p>
@@ -130,7 +128,11 @@ export default function SettingsPage() {
             Import JSON
           </Button>
           {importStatus && (
-            <p style={{ marginTop: 'var(--space-sm)', fontSize: 'var(--font-size-sm)' }} role="status">
+            <p
+              className={importError ? 'field-error' : 'field-help'}
+              style={{ marginTop: 'var(--space-sm)' }}
+              role={importError ? 'alert' : 'status'}
+            >
               {importStatus}
             </p>
           )}
@@ -139,7 +141,7 @@ export default function SettingsPage() {
 
       <section className="settings-group">
         <GlassCard>
-          <label className="settings-label">Restart Wizard</label>
+          <span className="settings-label">Restart Wizard</span>
           <p style={{ marginBottom: 'var(--space-md)', fontSize: 'var(--font-size-sm)' }}>
             Reset wizard answers back to step 1 while keeping your selected theme and AQI scale.
           </p>
@@ -168,9 +170,10 @@ export default function SettingsPage() {
 
       <section className="settings-group">
         <GlassCard>
-          <label className="settings-label">Delete All My Data</label>
+          <span className="settings-label">Delete All My Data</span>
           <p style={{ marginBottom: 'var(--space-md)', fontSize: 'var(--font-size-sm)' }}>
-            Permanently remove all saved SmogGuard profile answers and cached Open-Meteo forecasts from this browser.
+            Permanently remove all saved SmogGuard profile answers and cached Open-Meteo forecasts
+            from this browser.
           </p>
           {!confirmDelete ? (
             <Button onClick={() => setConfirmDelete(true)} variant="secondary" icon="🗑️">

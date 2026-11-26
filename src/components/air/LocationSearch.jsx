@@ -1,25 +1,33 @@
+/**
+ * @fileoverview ARIA combobox place search autocomplete powered by Open-Meteo Geocoding API.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
-import { searchPlaces, roundCoordinate } from '@/services/openMeteo';
-import { validateCoordinates } from '@/utils/validate';
+import { searchPlaces } from '@/services/openMeteo';
+import { API_CONFIG } from '@/data/constants';
+import ManualCoordsBox from './ManualCoordsBox';
 
 /**
- * Accessible Place Search Autocomplete (Open-Meteo Geocoding API)
- * - 300ms debounce, AbortController cancellation, minimum 2 characters
- * - Keyboard navigation: ArrowUp, ArrowDown, Enter, Escape
- * - Shows "No matches" and "Search unavailable, enter coordinates manually" states
- * - Manual coordinates fallback always accessible
+ * Accessible Open-Meteo place autocomplete with 300ms debounce, AbortController,
+ * keyboard Arrow/Enter/Escape navigation, and manual coordinate fallback.
+ * @param {Object} props - Current location values and selection handler.
+ * @returns {JSX.Element} Location search combobox component.
  */
-export default function LocationSearch({ locationName, lat, lon, onSelectLocation }) {
+export default function LocationSearch({
+  locationName,
+  lat,
+  lon,
+  onSelectLocation,
+  errorId,
+  hasError,
+}) {
   const [query, setQuery] = useState(locationName || '');
   const [results, setResults] = useState([]);
-  const [status, setStatus] = useState('idle'); // idle | loading | ok | empty | unavailable
+  const [status, setStatus] = useState('idle');
   const [statusMsg, setStatusMsg] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [showManual, setShowManual] = useState(false);
-  const [manualLat, setManualLat] = useState(lat != null ? String(lat) : '');
-  const [manualLon, setManualLon] = useState(lon != null ? String(lon) : '');
-  const [coordError, setCoordError] = useState('');
 
   const abortRef = useRef(null);
   const skipNextFetchRef = useRef(false);
@@ -27,24 +35,22 @@ export default function LocationSearch({ locationName, lat, lon, onSelectLocatio
 
   useEffect(() => {
     setQuery(locationName || '');
-    if (lat != null) setManualLat(String(lat));
-    if (lon != null) setManualLon(String(lon));
-  }, [locationName, lat, lon]);
+  }, [locationName]);
 
   useEffect(() => {
     if (skipNextFetchRef.current) {
       skipNextFetchRef.current = false;
-      return;
+      return undefined;
     }
 
     const trimmed = query.trim();
-    if (trimmed.length < 2) {
+    if (trimmed.length < API_CONFIG.GEOCODING_MIN_CHARS) {
       if (abortRef.current) abortRef.current.abort();
       setResults([]);
       setStatus('idle');
       setStatusMsg('');
       setIsOpen(false);
-      return;
+      return undefined;
     }
 
     const timer = setTimeout(async () => {
@@ -63,12 +69,14 @@ export default function LocationSearch({ locationName, lat, lon, onSelectLocatio
         if (res.status === 'ok') {
           setResults(res.results);
           setStatus('ok');
-          setStatusMsg(`${res.results.length} matching place${res.results.length === 1 ? '' : 's'}`);
+          setStatusMsg(
+            `${res.results.length} matching place${res.results.length === 1 ? '' : 's'} available.`
+          );
           setActiveIndex(-1);
         } else if (res.status === 'empty') {
           setResults([]);
           setStatus('empty');
-          setStatusMsg('No matches');
+          setStatusMsg('No matches found.');
         } else if (res.status === 'unavailable') {
           setResults([]);
           setStatus('unavailable');
@@ -77,12 +85,13 @@ export default function LocationSearch({ locationName, lat, lon, onSelectLocatio
         }
       } catch (err) {
         if (err?.name !== 'AbortError') {
+          console.warn('Place search failed:', err);
           setStatus('unavailable');
           setStatusMsg('Search unavailable, enter coordinates manually');
           setShowManual(true);
         }
       }
-    }, 300);
+    }, API_CONFIG.GEOCODING_DEBOUNCE_MS);
 
     return () => {
       clearTimeout(timer);
@@ -93,15 +102,10 @@ export default function LocationSearch({ locationName, lat, lon, onSelectLocatio
   const selectPlace = (place) => {
     skipNextFetchRef.current = true;
     setQuery(place.displayName);
-    setManualLat(String(place.lat));
-    setManualLon(String(place.lon));
     setIsOpen(false);
     setActiveIndex(-1);
-    onSelectLocation({
-      name: place.displayName,
-      lat: place.lat,
-      lon: place.lon,
-    });
+    setStatusMsg(`Selected ${place.displayName}`);
+    onSelectLocation({ name: place.displayName, lat: place.lat, lon: place.lon });
   };
 
   const handleKeyDown = (e) => {
@@ -111,13 +115,14 @@ export default function LocationSearch({ locationName, lat, lon, onSelectLocatio
       e.preventDefault();
       return;
     }
-
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setActiveIndex((prev) => (results.length === 0 ? -1 : (prev + 1) % results.length));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setActiveIndex((prev) => (results.length === 0 ? -1 : (prev - 1 + results.length) % results.length));
+      setActiveIndex((prev) =>
+        results.length === 0 ? -1 : (prev - 1 + results.length) % results.length
+      );
     } else if (e.key === 'Enter' && isOpen && activeIndex >= 0 && results[activeIndex]) {
       e.preventDefault();
       selectPlace(results[activeIndex]);
@@ -125,22 +130,6 @@ export default function LocationSearch({ locationName, lat, lon, onSelectLocatio
       setIsOpen(false);
       setActiveIndex(-1);
     }
-  };
-
-  const handleApplyCoords = () => {
-    const check = validateCoordinates(manualLat, manualLon);
-    if (!check.valid) {
-      setCoordError(check.error);
-      return;
-    }
-    setCoordError('');
-    const rLat = roundCoordinate(check.lat);
-    const rLon = roundCoordinate(check.lon);
-    const label = `Custom (${rLat.toFixed(1)}°, ${rLon.toFixed(1)}°)`;
-    skipNextFetchRef.current = true;
-    setQuery(label);
-    setIsOpen(false);
-    onSelectLocation({ name: label, lat: rLat, lon: rLon });
   };
 
   return (
@@ -157,9 +146,8 @@ export default function LocationSearch({ locationName, lat, lon, onSelectLocatio
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (results.length > 0 || status === 'empty' || status === 'unavailable') {
+            if (results.length > 0 || status === 'empty' || status === 'unavailable')
               setIsOpen(true);
-            }
           }}
           placeholder="Type any city or town (min 2 letters, e.g. Salem, Tambaram, Delhi)..."
           role="combobox"
@@ -167,31 +155,35 @@ export default function LocationSearch({ locationName, lat, lon, onSelectLocatio
           aria-expanded={isOpen}
           aria-controls={listId}
           aria-activedescendant={activeIndex >= 0 ? `place-option-${activeIndex}` : undefined}
+          aria-invalid={Boolean(hasError)}
+          aria-describedby={hasError && errorId ? errorId : 'location-privacy-note'}
         />
 
         {isOpen && (
-          <div id={listId} role="listbox" className="autocomplete-dropdown" aria-label="Matching locations">
+          <ul
+            id={listId}
+            role="listbox"
+            className="autocomplete-dropdown"
+            aria-label="Matching locations"
+          >
             {status === 'loading' && (
-              <div className="autocomplete-status" role="status">
-                Searching Open-Meteo geocoding...
-              </div>
+              <li className="autocomplete-status">Searching Open-Meteo geocoding...</li>
             )}
             {status === 'empty' && (
-              <div className="autocomplete-status" role="status">
+              <li className="autocomplete-status">
                 No matches — try another spelling or enter coordinates manually below.
-              </div>
+              </li>
             )}
             {status === 'unavailable' && (
-              <div className="autocomplete-status autocomplete-status--warn" role="alert">
+              <li className="autocomplete-status autocomplete-status--warn">
                 Search unavailable, enter coordinates manually
-              </div>
+              </li>
             )}
             {status === 'ok' &&
               results.map((place, idx) => (
-                <button
+                <li
                   key={place.id}
                   id={`place-option-${idx}`}
-                  type="button"
                   role="option"
                   aria-selected={idx === activeIndex}
                   className={`autocomplete-option ${idx === activeIndex ? 'active' : ''}`}
@@ -201,23 +193,25 @@ export default function LocationSearch({ locationName, lat, lon, onSelectLocatio
                   <span className="autocomplete-coords">
                     {place.lat.toFixed(1)}°, {place.lon.toFixed(1)}°
                   </span>
-                </button>
+                </li>
               ))}
-          </div>
+          </ul>
         )}
       </div>
 
-      <div aria-live="polite" className="sr-only">
+      <div role="status" aria-live="polite" className="sr-only">
         {statusMsg}
       </div>
 
       <div className="privacy-row">
-        <p className="privacy-note">
-          🔒 Privacy note: Coordinates are rounded to 0.1° (~11 km) before any Open-Meteo request and cached locally for 30 minutes.
+        <p id="location-privacy-note" className="privacy-note">
+          🔒 Privacy note: Coordinates are rounded to 0.1° (~11 km) before any Open-Meteo request
+          and cached locally for 30 minutes.
         </p>
         <button
           type="button"
           className="btn btn--ghost btn--sm"
+          aria-expanded={showManual}
           onClick={() => setShowManual((v) => !v)}
         >
           {showManual ? 'Hide manual coordinates' : 'Enter coordinates manually'}
@@ -225,46 +219,16 @@ export default function LocationSearch({ locationName, lat, lon, onSelectLocatio
       </div>
 
       {showManual && (
-        <div className="manual-coords-box">
-          <div className="manual-coords-grid">
-            <div>
-              <label htmlFor="manual-lat" className="field-label">
-                Latitude (-90 to 90)
-              </label>
-              <input
-                id="manual-lat"
-                type="number"
-                step="0.1"
-                className="text-input"
-                value={manualLat}
-                onChange={(e) => setManualLat(e.target.value)}
-                placeholder="e.g. 11.7"
-              />
-            </div>
-            <div>
-              <label htmlFor="manual-lon" className="field-label">
-                Longitude (-180 to 180)
-              </label>
-              <input
-                id="manual-lon"
-                type="number"
-                step="0.1"
-                className="text-input"
-                value={manualLon}
-                onChange={(e) => setManualLon(e.target.value)}
-                placeholder="e.g. 78.1"
-              />
-            </div>
-            <button type="button" className="btn btn--secondary" onClick={handleApplyCoords}>
-              Use Coordinates
-            </button>
-          </div>
-          {coordError && (
-            <p className="field-error" role="alert">
-              {coordError}
-            </p>
-          )}
-        </div>
+        <ManualCoordsBox
+          lat={lat}
+          lon={lon}
+          onApply={(loc) => {
+            skipNextFetchRef.current = true;
+            setQuery(loc.name);
+            setIsOpen(false);
+            onSelectLocation(loc);
+          }}
+        />
       )}
     </div>
   );

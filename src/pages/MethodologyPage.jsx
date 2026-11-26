@@ -74,8 +74,8 @@ export default function MethodologyPage() {
         <GlassCard>
           <h3>AQI & WHO Ratio</h3>
           <p>
-            PM2.5 (µg/m³) converted via piecewise-linear breakpoints for CPCB India NAQI or US EPA AQI;
-            WHO ratio = PM2.5 ÷ 15 µg/m³ (WHO 2021 24-hour guideline).
+            PM2.5 (µg/m³) converted via piecewise-linear breakpoints for CPCB India NAQI or US EPA
+            AQI; WHO ratio = PM2.5 ÷ 15 µg/m³ (WHO 2021 24-hour guideline).
           </p>
 
           <h3 style={{ marginTop: 'var(--space-lg)' }}>Room Purifier CADR Sizing</h3>
@@ -83,10 +83,13 @@ export default function MethodologyPage() {
             Recommended CADR (m³/h) = Room Area (m²) × Ceiling Height (m) × 5 ACH (±15–20% range).
           </p>
 
-          <h3 style={{ marginTop: 'var(--space-lg)' }}>Transport, Electricity, Cooking, Diet & Waste</h3>
+          <h3 style={{ marginTop: 'var(--space-lg)' }}>
+            Transport, Electricity, Cooking, Diet & Waste
+          </h3>
           <p>
-            All household carbon estimates multiply user-reported or conservative &ldquo;Not sure&rdquo;
-            inputs by TERI, CEA v18, IPCC 2006, Vetter et al., and CPCB factors with low–high bounds.
+            All household carbon estimates multiply user-reported or conservative &ldquo;Not
+            sure&rdquo; inputs by TERI, CEA v18, IPCC 2006, Vetter et al., and CPCB factors with
+            low–high bounds.
           </p>
         </GlassCard>
       </section>
@@ -96,7 +99,11 @@ export default function MethodologyPage() {
         {evidenceData.map((ev) => {
           const info = EVIDENCE_LEVELS[ev.evidence_level] || {};
           return (
-            <GlassCard key={ev.id} className="animate-fade-in" style={{ marginBottom: 'var(--space-md)' }}>
+            <GlassCard
+              key={ev.id}
+              className="animate-fade-in"
+              style={{ marginBottom: 'var(--space-md)' }}
+            >
               <h3>{ev.claim}</h3>
               <p>
                 <span className={`badge badge--${info.color || 'gray'}`}>
@@ -130,7 +137,15 @@ export default function MethodologyPage() {
         </GlassCard>
       </section>
 
-      <div style={{ textAlign: 'center', marginTop: 'var(--space-xl)', display: 'flex', gap: 'var(--space-md)', justifyContent: 'center' }}>
+      <div
+        style={{
+          textAlign: 'center',
+          marginTop: 'var(--space-xl)',
+          display: 'flex',
+          gap: 'var(--space-md)',
+          justifyContent: 'center',
+        }}
+      >
         <Link to="/" className="btn btn--secondary">
           ← Back to Home
         </Link>

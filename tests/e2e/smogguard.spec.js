@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test';
 
-test('SmogGuard static flow: landing -> sample demo -> 4-step wizard -> 10-section report', async ({ page }) => {
+test('SmogGuard static flow: landing -> sample demo -> 4-step wizard -> 10-section report', async ({
+  page,
+}) => {
   await page.goto('/');
 
   await expect(page.getByRole('heading', { name: /SmogGuard/i })).toBeVisible();
-  await expect(page.getByText(/24-Hour PM2\.5 Forecast/i)).toBeVisible();
+  await expect(page.getByRole('heading', { name: /24-Hour PM2\.5 Forecast/i })).toBeVisible();
 
   // Tailor for family member & run sample severe-smog demo
   await page.getByRole('button', { name: /Older adults/i }).click();
@@ -18,10 +20,14 @@ test('SmogGuard static flow: landing -> sample demo -> 4-step wizard -> 10-secti
   await expect(page.getByRole('heading', { name: /2\. Family & Priorities/i })).toBeVisible();
   await page.getByRole('button', { name: /Next Step/i }).click();
 
-  await expect(page.getByRole('heading', { name: /3\. Rooms, Kitchen & Indoor Sources/i })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /3\. Rooms, Kitchen & Indoor Sources/i })
+  ).toBeVisible();
   await page.getByRole('button', { name: /Next Step/i }).click();
 
-  await expect(page.getByRole('heading', { name: /4\. Daily Routine, Energy & Commute/i })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /4\. Daily Routine, Energy & Commute/i })
+  ).toBeVisible();
   await page.getByRole('button', { name: /Generate Smog & Air Quality Report/i }).click();
 
   await expect(page.getByRole('heading', { name: /Smog and Air Quality Report/i })).toBeVisible();

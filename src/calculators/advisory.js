@@ -1,7 +1,5 @@
 /**
- * Health Advisory Calculator — SmogGuard
- * Uses MoHFW/NCDC India category guidance from advisories.json.
- * Includes family-member tailoring and explicit "not medical advice" disclaimer.
+ * @fileoverview Pure MoHFW/NCDC health advisory and family-profile tailoring calculator.
  */
 
 import advisoriesData from '../data/advisories.json';
@@ -9,10 +7,11 @@ import { pm25ToAqi } from './aqi.js';
 import { getAqiCategory } from '../data/constants.js';
 
 /**
- * Get MoHFW/NCDC health advisory tailored for selected family profiles.
- * @param {number} pm25 - Current or peak PM2.5 in µg/m³
- * @param {string[]} selectedFamilyIds - Array of ['children','older_adults','breathing_heart','pregnancy']
- * @param {'india_naqi'|'us_aqi'} scale
+ * Build MoHFW/NCDC health advisory text tailored to selected sensitive family profiles.
+ * @param {number} pm25 - Current or peak PM2.5 concentration (µg/m³).
+ * @param {string[]} [selectedFamilyIds=[]] - Selected family profile IDs.
+ * @param {'india_naqi'|'us_aqi'} [scale='india_naqi'] - Active AQI scale.
+ * @returns {Object} Structured advisory with tailored notes, citation, and disclaimer.
  */
 export function getHealthAdvisory(pm25, selectedFamilyIds = [], scale = 'india_naqi') {
   const aqi = pm25ToAqi(pm25, scale);

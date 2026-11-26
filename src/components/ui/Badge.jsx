@@ -14,17 +14,29 @@ export default function Badge({ children, variant = 'gray', icon }) {
 /** Evidence level badge */
 export function EvidenceBadge({ level }) {
   const info = EVIDENCE_LEVELS[level] || EVIDENCE_LEVELS.moderate;
-  return <Badge variant={info.color} icon={info.icon}>{info.label}</Badge>;
+  return (
+    <Badge variant={info.color} icon={info.icon}>
+      {info.label}
+    </Badge>
+  );
 }
 
 /** Effort level badge */
 export function EffortBadge({ level }) {
   const info = EFFORT_LEVELS[level] || EFFORT_LEVELS.medium;
-  return <Badge variant={info.color} icon={info.icon}>{info.label}</Badge>;
+  return (
+    <Badge variant={info.color} icon={info.icon}>
+      {info.label}
+    </Badge>
+  );
 }
 
 /** Cost tier badge */
 export function CostBadge({ tier }) {
   const info = COST_TIERS[tier] || COST_TIERS.free;
-  return <Badge variant={info.color} icon={info.icon}>{info.label}</Badge>;
+  return (
+    <Badge variant={info.color} icon={info.icon}>
+      {info.label}
+    </Badge>
+  );
 }

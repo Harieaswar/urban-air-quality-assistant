@@ -1,19 +1,24 @@
 /**
- * Open-Meteo Browser Client — SmogGuard
- * Public, keyless browser calls ONLY to:
- * - https://geocoding-api.open-meteo.com
- * - https://air-quality-api.open-meteo.com
- * - https://api.open-meteo.com
- *
- * Includes 0.1° coordinate rounding (privacy), 30-min localStorage caching,
- * 8-second AbortController timeouts, HTTP/429 handling, and ordered fallback chain:
- *   1. Live Open-Meteo API
- *   2. Cached data (labeled with age)
- *   3. Manual PM2.5 / AQI entry
- *   4. Sample severe-smog day demo
+ * @fileoverview Keyless browser client for Open-Meteo Geocoding, Air Quality (CAMS), and Weather APIs.
  */
 
-import { SAMPLE_SEVERE_SMOG } from '../data/constants.js';
+import { API_CONFIG } from '../data/constants.js';
+import {
+  CACHE_KEY_PREFIX,
+  roundCoordinate,
+  readCachedAirData,
+  writeCachedAirData,
+  buildSampleSevereSmogData,
+  buildManualAirData,
+} from './airCache.js';
+
+export {
+  CACHE_KEY_PREFIX,
+  roundCoordinate,
+  readCachedAirData,
+  buildSampleSevereSmogData,
+  buildManualAirData,
+};
 
 export const OPEN_METEO_HOSTS = {
   geocoding: 'https://geocoding-api.open-meteo.com/v1/search',
@@ -21,48 +26,19 @@ export const OPEN_METEO_HOSTS = {
   weather: 'https://api.open-meteo.com/v1/forecast',
 };
 
-export const CACHE_KEY_PREFIX = 'smogguard_aq_cache_v1_';
-export const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
-export const REQUEST_TIMEOUT_MS = 8000; // 8 seconds
-
 /**
- * Round latitude or longitude to 0.1 degrees (~11 km) before any API request.
- * @param {number} value
- * @returns {number}
+ * Execute a fetch request with an 8-second timeout and external AbortSignal chaining.
+ * @param {string} url - Target Open-Meteo URL.
+ * @param {AbortSignal} [externalSignal] - Optional caller abort signal.
+ * @param {number} [timeoutMs=8000] - Request timeout in milliseconds.
+ * @returns {Promise<Object>} Parsed JSON response body.
  */
-export function roundCoordinate(value) {
-  const num = Number(value);
-  if (!Number.isFinite(num)) return 0;
-  return Math.round(num * 10) / 10;
-}
-
-/**
- * Build cache key from rounded coordinates.
- */
-export function getCacheKey(lat, lon) {
-  return `${CACHE_KEY_PREFIX}${roundCoordinate(lat).toFixed(1)}_${roundCoordinate(lon).toFixed(1)}`;
-}
-
-/**
- * Format age in human-readable form.
- * @param {number} timestampMs
- * @returns {string}
- */
-export function formatCacheAge(timestampMs) {
-  const diffMin = Math.max(0, Math.round((Date.now() - timestampMs) / 60000));
-  if (diffMin < 1) return 'just now';
-  if (diffMin === 1) return '1 min ago';
-  if (diffMin < 60) return `${diffMin} mins ago`;
-  const hrs = Math.round(diffMin / 60);
-  return `${hrs} hr${hrs > 1 ? 's' : ''} ago`;
-}
-
-/**
- * Fetch helper with 8-second AbortController timeout and external signal support.
- */
-async function fetchWithTimeout(url, externalSignal, timeoutMs = REQUEST_TIMEOUT_MS) {
+async function fetchWithTimeout(url, externalSignal, timeoutMs = API_CONFIG.REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(new Error('Request timed out after 8s')), timeoutMs);
+  const timer = setTimeout(
+    () => controller.abort(new Error('Request timed out after 8s')),
+    timeoutMs
+  );
 
   const onExternalAbort = () => controller.abort(externalSignal?.reason);
   if (externalSignal) {
@@ -76,38 +52,35 @@ async function fetchWithTimeout(url, externalSignal, timeoutMs = REQUEST_TIMEOUT
   try {
     const response = await fetch(url, { signal: controller.signal });
     if (response.status === 429) {
-      const err = new Error('Rate limit reached. Using fallback air data.');
+      const err = new Error('Open-Meteo rate limit reached (HTTP 429).');
       err.code = 'RATE_LIMIT';
       throw err;
     }
     if (!response.ok) {
-      const err = new Error(`HTTP error ${response.status}`);
+      const err = new Error(`Open-Meteo HTTP error ${response.status}`);
       err.code = 'HTTP_ERROR';
       throw err;
     }
     return await response.json();
   } finally {
     clearTimeout(timer);
-    if (externalSignal) {
-      externalSignal.removeEventListener('abort', onExternalAbort);
-    }
+    if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
   }
 }
 
 /**
- * Search places via Open-Meteo Geocoding API.
- * Minimum 2 characters. Supports AbortController signal from caller.
- * @param {string} query
- * @param {{ signal?: AbortSignal }} options
- * @returns {Promise<{ status: 'ok'|'empty'|'too_short'|'unavailable', results: Array, message?: string }>}
+ * Search places via Open-Meteo Geocoding API (minimum 2 characters).
+ * @param {string} query - Search query string.
+ * @param {{ signal?: AbortSignal }} [options={}] - Optional abort signal.
+ * @returns {Promise<{ status: string, results: Array, message?: string }>} Search outcome.
  */
 export async function searchPlaces(query, { signal } = {}) {
   const cleaned = String(query || '').trim();
-  if (cleaned.length < 2) {
+  if (cleaned.length < API_CONFIG.GEOCODING_MIN_CHARS) {
     return { status: 'too_short', results: [] };
   }
 
-  const url = `${OPEN_METEO_HOSTS.geocoding}?name=${encodeURIComponent(cleaned)}&count=8&language=en&format=json`;
+  const url = `${OPEN_METEO_HOSTS.geocoding}?name=${encodeURIComponent(cleaned)}&count=${API_CONFIG.GEOCODING_LIMIT}&language=en&format=json`;
   try {
     const data = await fetchWithTimeout(url, signal);
     const raw = Array.isArray(data?.results) ? data.results : [];
@@ -119,10 +92,8 @@ export async function searchPlaces(query, { signal } = {}) {
       name: item.name,
       admin1: item.admin1 || '',
       country: item.country || '',
-      countryCode: item.country_code || '',
       lat: roundCoordinate(item.latitude),
       lon: roundCoordinate(item.longitude),
-      timezone: item.timezone || 'auto',
       displayName: [item.name, item.admin1, item.country].filter(Boolean).join(', '),
     }));
     return { status: 'ok', results };
@@ -138,107 +109,66 @@ export async function searchPlaces(query, { signal } = {}) {
   }
 }
 
-/**
- * Read cached entry from localStorage (returns even if expired, with isFresh flag).
- */
-export function readCachedAirData(lat, lon) {
-  try {
-    const key = getCacheKey(lat, lon);
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed || !Array.isArray(parsed.hourlyData) || parsed.hourlyData.length === 0) return null;
-    const ageMs = Date.now() - parsed.fetchedAt;
+function normalizeHourlyResponse(aqRes) {
+  const times = aqRes?.hourly?.time;
+  const pm25Arr = aqRes?.hourly?.pm2_5;
+  const pm10Arr = aqRes?.hourly?.pm10;
+  if (!Array.isArray(pm25Arr) || pm25Arr.length === 0) {
+    throw new Error('Open-Meteo returned empty PM2.5 hourly data');
+  }
+  return pm25Arr.slice(0, API_CONFIG.FORECAST_HOURS).map((val, idx) => {
+    const iso = Array.isArray(times) && times[idx] ? times[idx] : '';
+    const parsedHour = iso ? Number(iso.slice(11, 13)) : idx;
+    const hour = Number.isFinite(parsedHour) ? parsedHour : idx;
     return {
-      ...parsed,
-      isFresh: ageMs <= CACHE_TTL_MS,
-      ageLabel: formatCacheAge(parsed.fetchedAt),
+      hour,
+      pm25: Math.max(0, Math.round(Number(val ?? 0) * 10) / 10),
+      pm10:
+        Array.isArray(pm10Arr) && pm10Arr[idx] != null ? Math.round(Number(pm10Arr[idx])) : null,
+      timeLabel: `${String(hour).padStart(2, '0')}:00`,
     };
-  } catch {
-    return null;
-  }
+  });
 }
 
-/**
- * Write air data entry to localStorage.
- */
-function writeCachedAirData(lat, lon, payload) {
-  try {
-    const key = getCacheKey(lat, lon);
-    localStorage.setItem(key, JSON.stringify(payload));
-  } catch {
-    // Ignore storage quota errors cleanly
+function selectFailureFallback(reason, { cached, manualPm25, locationName, rLat, rLon }) {
+  if (cached) {
+    return {
+      ...cached,
+      mode: 'cached_fallback',
+      source: `${cached.source} (cached ${cached.ageLabel})`,
+      isFallback: true,
+      notice: `${reason} Showing previously cached forecast from ${cached.ageLabel}.`,
+    };
   }
-}
-
-/**
- * Build sample severe-smog fallback payload.
- */
-export function buildSampleSevereSmogData() {
-  const nowIso = new Date().toISOString();
-  const hourlyData = SAMPLE_SEVERE_SMOG.hourlyPm25.map((pm25, hour) => ({
-    hour,
-    pm25,
-    timeLabel: `${String(hour).padStart(2, '0')}:00`,
-  }));
-  const currentHour = new Date().getHours();
+  if (manualPm25 != null && Number.isFinite(Number(manualPm25)) && Number(manualPm25) >= 0) {
+    const manual = buildManualAirData({ pm25: manualPm25, locationName, lat: rLat, lon: rLon });
+    return {
+      ...manual,
+      notice: `${reason} Using your manual PM2.5 reading (${manual.currentPm25} µg/m³).`,
+    };
+  }
+  const sample = buildSampleSevereSmogData();
   return {
-    mode: 'sample_demo',
-    locationName: SAMPLE_SEVERE_SMOG.locationName,
-    roundedLat: SAMPLE_SEVERE_SMOG.lat,
-    roundedLon: SAMPLE_SEVERE_SMOG.lon,
-    hourlyData,
-    currentPm25: hourlyData[currentHour]?.pm25 ?? hourlyData[0].pm25,
-    weather: SAMPLE_SEVERE_SMOG.weather,
-    source: SAMPLE_SEVERE_SMOG.source,
-    fetchedAt: Date.now(),
-    timestampIso: nowIso,
-    isFallback: true,
-    notice: 'Showing Sample Severe-Smog Day demo dataset (illustrative winter smog episode).',
+    ...sample,
+    notice: `${reason} Showing Sample Severe-Smog Day demo until live or manual data is entered.`,
   };
 }
 
 /**
- * Build manual PM2.5 / AQI fallback payload (24-hour flat or diurnal-anchored curve is NOT invented:
- * clearly marks manual single-reading entry across current hour or uniform baseline if no forecast exists).
- */
-export function buildManualAirData({ pm25, locationName = 'Manual Reading', lat = null, lon = null }) {
-  const val = Math.max(0, Math.round(Number(pm25) || 0));
-  const now = Date.now();
-  const hourlyData = Array.from({ length: 24 }, (_, hour) => ({
-    hour,
-    pm25: val,
-    timeLabel: `${String(hour).padStart(2, '0')}:00`,
-  }));
-  return {
-    mode: 'manual',
-    locationName,
-    roundedLat: lat != null ? roundCoordinate(lat) : null,
-    roundedLon: lon != null ? roundCoordinate(lon) : null,
-    hourlyData,
-    currentPm25: val,
-    weather: null,
-    source: 'Manual PM2.5 / Monitor Entry (user-provided)',
-    fetchedAt: now,
-    timestampIso: new Date(now).toISOString(),
-    isFallback: true,
-    notice: `Using your manual PM2.5 reading (${val} µg/m³). Hourly curve reflects this steady manual baseline until live forecast is available.`,
-  };
-}
-
-/**
- * Fetch 24-hour air quality (CAMS PM2.5) and weather from Open-Meteo for rounded coords.
- * Fallback order on failure:
- *   1. Cached data (labeled with its age)
- *   2. Manual PM2.5 entry (if provided)
- *   3. Sample severe-smog day
- *
- * @param {number} lat
- * @param {number} lon
- * @param {{ locationName?: string, signal?: AbortSignal, forceRefresh?: boolean, manualPm25?: number|null }} options
+ * Fetch 24-hour CAMS PM2.5 forecast and current weather from Open-Meteo for rounded coordinates.
+ * Falls back in order: cached data (with age) -> manual PM2.5 -> Sample Severe-Smog Day.
+ * @param {number} lat - Latitude.
+ * @param {number} lon - Longitude.
+ * @param {{ locationName?: string, signal?: AbortSignal, forceRefresh?: boolean, manualPm25?: number|null }} [options={}] - Options.
+ * @returns {Promise<Object>} Air-quality and weather payload.
  */
 export async function fetchAirAndWeather(lat, lon, options = {}) {
-  const { locationName = 'Selected Location', signal, forceRefresh = false, manualPm25 = null } = options;
+  const {
+    locationName = 'Selected Location',
+    signal,
+    forceRefresh = false,
+    manualPm25 = null,
+  } = options;
   const rLat = roundCoordinate(lat);
   const rLon = roundCoordinate(lon);
 
@@ -259,32 +189,15 @@ export async function fetchAirAndWeather(lat, lon, options = {}) {
   try {
     const [aqRes, wxRes] = await Promise.all([
       fetchWithTimeout(aqUrl, signal),
-      fetchWithTimeout(wxUrl, signal).catch(() => null),
+      fetchWithTimeout(wxUrl, signal).catch((wxErr) => {
+        console.warn('Weather context fetch failed; continuing with AQ data:', wxErr);
+        return null;
+      }),
     ]);
 
-    const times = aqRes?.hourly?.time;
-    const pm25Arr = aqRes?.hourly?.pm2_5;
-    const pm10Arr = aqRes?.hourly?.pm10;
-
-    if (!Array.isArray(pm25Arr) || pm25Arr.length === 0) {
-      throw new Error('Open-Meteo returned empty PM2.5 hourly data');
-    }
-
-    const hourlyData = pm25Arr.slice(0, 24).map((val, idx) => {
-      const iso = Array.isArray(times) && times[idx] ? times[idx] : '';
-      const parsedHour = iso ? Number(iso.slice(11, 13)) : idx;
-      const hour = Number.isFinite(parsedHour) ? parsedHour : idx;
-      return {
-        hour,
-        pm25: Math.max(0, Math.round(Number(val ?? 0) * 10) / 10),
-        pm10: Array.isArray(pm10Arr) && pm10Arr[idx] != null ? Math.round(Number(pm10Arr[idx])) : null,
-        timeLabel: `${String(hour).padStart(2, '0')}:00`,
-      };
-    });
-
+    const hourlyData = normalizeHourlyResponse(aqRes);
     const currentHour = new Date().getHours();
     const currentEntry = hourlyData.find((d) => d.hour === currentHour) || hourlyData[0];
-
     const weather = wxRes?.current
       ? {
           temperatureC: wxRes.current.temperature_2m ?? null,
@@ -315,39 +228,12 @@ export async function fetchAirAndWeather(lat, lon, options = {}) {
     if (err?.name === 'AbortError' && signal?.aborted) {
       throw err;
     }
-
     const reason =
       err?.code === 'RATE_LIMIT'
         ? 'Open-Meteo rate limit reached.'
         : err?.message?.includes('timed out')
           ? 'Open-Meteo request timed out after 8 seconds.'
           : 'Could not reach Open-Meteo (offline or service error).';
-
-    // Fallback 1: Cached data (even if stale, labeled with exact age)
-    if (cached) {
-      return {
-        ...cached,
-        mode: 'cached_fallback',
-        source: `${cached.source} (cached ${cached.ageLabel})`,
-        isFallback: true,
-        notice: `${reason} Showing previously cached forecast from ${cached.ageLabel}.`,
-      };
-    }
-
-    // Fallback 2: Manual PM2.5 entry if provided
-    if (manualPm25 != null && Number.isFinite(Number(manualPm25)) && Number(manualPm25) >= 0) {
-      const manual = buildManualAirData({ pm25: manualPm25, locationName, lat: rLat, lon: rLon });
-      return {
-        ...manual,
-        notice: `${reason} Using your manual PM2.5 reading (${manual.currentPm25} µg/m³).`,
-      };
-    }
-
-    // Fallback 3: Sample severe-smog day
-    const sample = buildSampleSevereSmogData();
-    return {
-      ...sample,
-      notice: `${reason} Showing Sample Severe-Smog Day demo until live or manual data is entered.`,
-    };
+    return selectFailureFallback(reason, { cached, manualPm25, locationName, rLat, rLon });
   }
 }

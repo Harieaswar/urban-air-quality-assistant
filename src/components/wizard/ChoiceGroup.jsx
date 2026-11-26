@@ -1,11 +1,13 @@
+/**
+ * @fileoverview Reusable guided choice group with built-in "Other" input and "Not sure" option.
+ */
+
 import React from 'react';
 
 /**
- * Reusable Guided Choice Group — SmogGuard
- * Ensures EVERY choice group supports:
- * - Single-select (radio cards/chips) or multi-select (checkbox chips)
- * - "Other" option revealing a labeled input with validation
- * - "Not sure" option storing "unknown" and noting the conservative default
+ * Accessible radio or checkbox choice group supporting "Other" text entry and "Not sure" fallback.
+ * @param {Object} props - Field metadata, options, value, and change handlers.
+ * @returns {JSX.Element} Choice group fieldset.
  */
 export default function ChoiceGroup({
   id,
@@ -19,12 +21,8 @@ export default function ChoiceGroup({
   conservativeHint = '',
   error = '',
 }) {
-  const isSelected = (optVal) => {
-    if (multi) {
-      return Array.isArray(value) && value.includes(optVal);
-    }
-    return value === optVal;
-  };
+  const isSelected = (optVal) =>
+    multi ? Array.isArray(value) && value.includes(optVal) : value === optVal;
 
   const handleToggle = (optVal) => {
     if (!multi) {
@@ -37,15 +35,12 @@ export default function ChoiceGroup({
       return;
     }
     const cleaned = current.filter((x) => x !== 'unknown' && x !== 'none');
-    if (cleaned.includes(optVal)) {
-      onChange(cleaned.filter((x) => x !== optVal));
-    } else {
-      onChange([...cleaned, optVal]);
-    }
+    onChange(cleaned.includes(optVal) ? cleaned.filter((x) => x !== optVal) : [...cleaned, optVal]);
   };
 
   const showOtherInput = isSelected('other');
   const showUnknownHint = isSelected('unknown') && conservativeHint;
+  const errorId = `${id}-error`;
 
   const fullOptions = [
     ...options,
@@ -54,7 +49,11 @@ export default function ChoiceGroup({
   ];
 
   return (
-    <fieldset className="choice-fieldset">
+    <fieldset
+      className="choice-fieldset"
+      aria-invalid={Boolean(error)}
+      aria-describedby={error ? errorId : undefined}
+    >
       <legend className="field-label">{label}</legend>
       <div className="choice-grid" role={multi ? 'group' : 'radiogroup'} aria-label={label}>
         {fullOptions.map((opt) => {
@@ -86,19 +85,18 @@ export default function ChoiceGroup({
             className="text-input"
             value={otherValue}
             onChange={(e) => onOtherChange(e.target.value)}
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? errorId : undefined}
             placeholder="Enter details..."
           />
         </div>
       )}
 
       {showUnknownHint && (
-        <p className="field-help">
-          Conservative default applied: {conservativeHint}
-        </p>
+        <p className="field-help">Conservative default applied: {conservativeHint}</p>
       )}
-
       {error && (
-        <p className="field-error" role="alert">
+        <p id={errorId} className="field-error" role="alert">
           {error}
         </p>
       )}

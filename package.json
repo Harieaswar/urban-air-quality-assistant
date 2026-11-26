@@ -9,9 +9,12 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "lint": "eslint src/ --ext .js,.jsx"
+    "lint": "eslint src/ --ext .js,.jsx",
+    "format": "prettier --write \"src/**/*.{js,jsx,css,json}\" \"tests/**/*.{js,jsx}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,css}\" \"tests/**/*.{js,jsx}\""
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -23,10 +26,14 @@
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.0.1",
     "@vitejs/plugin-react": "^4.3.2",
+    "@vitest/coverage-v8": "^2.1.9",
+    "axe-core": "^4.14.1",
     "eslint": "^8.57.1",
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^4.6.2",
+    "jest-axe": "^11.0.0",
     "jsdom": "^25.0.1",
+    "prettier": "^3.10.1",
     "vite": "^5.4.8",
     "vitest": "^2.1.2"
   }

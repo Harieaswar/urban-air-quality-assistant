@@ -1,17 +1,212 @@
 [
-  {"id":"indoor_plants_purify","claim":"Indoor plants significantly purify air","verdict":"partially_supported","evidence_level":"limited","summary":"The 1989 NASA study showed plants can remove VOCs in sealed chambers. However, real-world studies (Cummings & Waring, 2020) found you would need 10-1000 plants per m² to match building air exchange. Plants offer marginal VOC absorption and psychological benefits but should not be relied on as primary air purifiers.","sources":[{"title":"NASA Clean Air Study — Wolverton et al.","year":1989},{"title":"Potted plants do not improve indoor air quality — Cummings & Waring, J Expo Sci Environ Epidemiol","year":2020}]},
-  {"id":"hepa_reduces_pm25","claim":"HEPA filters reduce indoor PM2.5","verdict":"supported","evidence_level":"strong","summary":"Multiple RCTs demonstrate portable HEPA purifiers reduce indoor PM2.5 by 50-80%. Efficacy depends on CADR relative to room volume (target ≥5 ACH). Proper sizing and continuous operation are essential.","sources":[{"title":"Portable HEPA Purifiers to Reduce Indoor PM2.5 — Chen et al., Cochrane Review","year":2021},{"title":"Effectiveness of portable air cleaners — Barn et al., Indoor Air","year":2018}]},
-  {"id":"open_windows_always_good","claim":"Opening windows always improves air quality","verdict":"partially_supported","evidence_level":"moderate","summary":"Ventilation improves IAQ ONLY when outdoor air quality is good. In polluted cities, opening windows during peak hours can worsen indoor PM2.5. Optimal strategy is timed ventilation during 'air windows' when outdoor PM2.5 is lowest.","sources":[{"title":"Impact of natural ventilation on IAQ in Delhi — Sharma & Kumar, Building and Environment","year":2020},{"title":"WHO Guidelines for Indoor Air Quality","year":2010}]},
-  {"id":"incense_harmful","claim":"Incense smoke is harmful to indoor air quality","verdict":"supported","evidence_level":"strong","summary":"Burning incense produces significant PM2.5, PM10, CO, benzene, toluene, and formaldehyde. Can raise indoor PM2.5 by 40-100 μg/m³ in typical Indian rooms. Associated with respiratory symptoms in poorly ventilated spaces.","sources":[{"title":"Emissions from burning incense — Jetter et al., Environ Sci Technol","year":2002},{"title":"Indoor air quality and incense in Indian households — Pant et al., Atmospheric Environment","year":2020}]},
-  {"id":"mosquito_coils_dangerous","claim":"Mosquito coils are dangerous for indoor air quality","verdict":"supported","evidence_level":"strong","summary":"A single mosquito coil emits PM2.5 equivalent to 75-137 cigarettes (by mass). Contains pyrethrin, formaldehyde, and other toxicants. Significant respiratory health risks from chronic exposure, especially for children.","sources":[{"title":"Mosquito coil emissions — Liu et al., Environmental Health Perspectives","year":2003},{"title":"Toxicology of mosquito coil smoke — Chang & Lin, J Toxicol Environ Health","year":2008}]},
-  {"id":"salt_lamps_purify","claim":"Salt lamps purify air by releasing negative ions","verdict":"myth_busted","evidence_level":"limited","summary":"No peer-reviewed evidence supports that Himalayan salt lamps release meaningful negative ions or improve IAQ. The heat from the low-wattage bulb is insufficient for significant ionization. Perceived benefits are likely placebo.","sources":[{"title":"Negative Air Ions and Effects — Perez et al., Int J Mol Sci","year":2013},{"title":"Review of ionizer and salt lamp claims — Columbia University","year":2019}]},
-  {"id":"ac_filters_clean_air","claim":"AC filters clean the air effectively","verdict":"partially_supported","evidence_level":"moderate","summary":"Standard AC filters capture large dust but have limited PM2.5 effectiveness. Some premium split ACs include HEPA-like filters that reduce PM2.5 by 20-40%. Regular filter cleaning is essential — dirty filters worsen air quality.","sources":[{"title":"Residential HVAC filtration — Zhao et al., Building and Environment","year":2019},{"title":"BEE India air conditioner filtration standards","year":2023}]},
-  {"id":"wet_mopping_reduces_pm","claim":"Wet mopping reduces PM more than dry sweeping","verdict":"supported","evidence_level":"moderate","summary":"Dry sweeping re-suspends settled PM, temporarily increasing indoor PM2.5 by 20-50 μg/m³. Wet mopping traps particles without re-suspension. Wet cleaning reduces indoor PM by 30-50% compared to dry methods.","sources":[{"title":"Resuspension of particles — Qian et al., Atmospheric Environment","year":2014},{"title":"Impact of cleaning on indoor PM — Corsi et al., Indoor Air","year":2008}]},
-  {"id":"cooking_lids_reduce_emissions","claim":"Cooking with lids reduces emissions and energy use","verdict":"supported","evidence_level":"strong","summary":"Covering pots reduces energy consumption by 25-30% by trapping steam and heat. Also reduces cooking aerosol emissions into indoor air. Pressure cooking further amplifies these benefits.","sources":[{"title":"Energy efficiency in Indian domestic cooking — Pohekar & Ramachandran, Energy","year":2006},{"title":"Cooking emissions and ventilation — Abdullahi et al., Sci Total Environ","year":2013}]},
-  {"id":"cross_ventilation_better","claim":"Cross ventilation is better than single-side ventilation","verdict":"supported","evidence_level":"strong","summary":"Cross ventilation (openings on opposite walls) provides 2-5x higher air exchange rates compared to single-side ventilation, more effectively diluting indoor pollutants.","sources":[{"title":"Natural ventilation in buildings — Allocca et al., Building and Environment","year":2003},{"title":"Cross-ventilation in tropical buildings — Tantasavasdi et al., Energy and Buildings","year":2001}]},
-  {"id":"diy_box_fan_filter_works","claim":"DIY box fan filters (Corsi-Rosenthal box) effectively reduce PM2.5","verdict":"supported","evidence_level":"moderate","summary":"The Corsi-Rosenthal box — MERV-13 filters on a box fan — reduces indoor PM2.5 by 60-70% in room-scale tests. Less effective than commercial HEPA but highly cost-effective (₹2000-3000 vs ₹10,000+).","sources":[{"title":"Corsi-Rosenthal Box Effectiveness — Dal Porto et al., PNAS","year":2022},{"title":"DIY Air Cleaners Comparison — UC Davis","year":2021}]},
-  {"id":"chimney_reduces_cooking_pollution","claim":"Kitchen chimney significantly reduces cooking-related indoor pollution","verdict":"supported","evidence_level":"strong","summary":"A properly installed kitchen chimney removes 60-80% of cooking-generated PM2.5, CO, and VOCs. Auto-clean chimneys with ≥1000 m³/h suction are most effective. Must be turned on before cooking and left running 5-10 min after.","sources":[{"title":"Range hood effectiveness — Lunden et al., Indoor Air","year":2015},{"title":"Kitchen ventilation in Indian homes — IIT Delhi","year":2019}]},
-  {"id":"air_purifying_paint","claim":"Air-purifying paints significantly clean indoor air","verdict":"partially_supported","evidence_level":"limited","summary":"Some paints contain activated carbon or photocatalytic TiO2 that break down small amounts of formaldehyde and VOCs. Effect is very slow and limited to painted surface area. Not a substitute for ventilation or filtration.","sources":[{"title":"Photocatalytic paints for IAQ — Chen & Poon, Building and Environment","year":2009},{"title":"Review of functional coatings for IAQ — Martinez et al., Coatings","year":2020}]},
-  {"id":"induction_better_iaq","claim":"Induction cooking produces better IAQ than gas","verdict":"supported","evidence_level":"strong","summary":"Gas cooking produces NO2, CO, formaldehyde, and PM2.5 as combustion byproducts. Induction eliminates all combustion-related pollutants, reducing kitchen PM2.5 by 50-70% during cooking. Food-related emissions (oil smoke) remain.","sources":[{"title":"Gas cooking and respiratory health — Gruenwald et al., IJERPH","year":2023},{"title":"Pollutant emissions from gas and electric cooking — Kashtan et al., Environ Sci Technol","year":2023}]},
-  {"id":"exercise_timing_aqi","claim":"Timing outdoor exercise to low-AQI hours significantly reduces pollution exposure","verdict":"supported","evidence_level":"moderate","summary":"During exercise, breathing rate increases 5-10x, proportionally increasing pollutant inhalation. Exercising during peak traffic vs early morning can result in 2-4x higher PM2.5 intake dose.","sources":[{"title":"Air pollution and exercise — Giles & Koehle, Br J Sports Med","year":2014},{"title":"Inhaled dose of PM during exercise — Int Panis et al., Environ Health","year":2010}]}
+  {
+    "id": "indoor_plants_purify",
+    "claim": "Indoor plants significantly purify air",
+    "verdict": "partially_supported",
+    "evidence_level": "limited",
+    "summary": "The 1989 NASA study showed plants can remove VOCs in sealed chambers. However, real-world studies (Cummings & Waring, 2020) found you would need 10-1000 plants per m² to match building air exchange. Plants offer marginal VOC absorption and psychological benefits but should not be relied on as primary air purifiers.",
+    "sources": [
+      { "title": "NASA Clean Air Study — Wolverton et al.", "year": 1989 },
+      {
+        "title": "Potted plants do not improve indoor air quality — Cummings & Waring, J Expo Sci Environ Epidemiol",
+        "year": 2020
+      }
+    ]
+  },
+  {
+    "id": "hepa_reduces_pm25",
+    "claim": "HEPA filters reduce indoor PM2.5",
+    "verdict": "supported",
+    "evidence_level": "strong",
+    "summary": "Multiple RCTs demonstrate portable HEPA purifiers reduce indoor PM2.5 by 50-80%. Efficacy depends on CADR relative to room volume (target ≥5 ACH). Proper sizing and continuous operation are essential.",
+    "sources": [
+      {
+        "title": "Portable HEPA Purifiers to Reduce Indoor PM2.5 — Chen et al., Cochrane Review",
+        "year": 2021
+      },
+      { "title": "Effectiveness of portable air cleaners — Barn et al., Indoor Air", "year": 2018 }
+    ]
+  },
+  {
+    "id": "open_windows_always_good",
+    "claim": "Opening windows always improves air quality",
+    "verdict": "partially_supported",
+    "evidence_level": "moderate",
+    "summary": "Ventilation improves IAQ ONLY when outdoor air quality is good. In polluted cities, opening windows during peak hours can worsen indoor PM2.5. Optimal strategy is timed ventilation during 'air windows' when outdoor PM2.5 is lowest.",
+    "sources": [
+      {
+        "title": "Impact of natural ventilation on IAQ in Delhi — Sharma & Kumar, Building and Environment",
+        "year": 2020
+      },
+      { "title": "WHO Guidelines for Indoor Air Quality", "year": 2010 }
+    ]
+  },
+  {
+    "id": "incense_harmful",
+    "claim": "Incense smoke is harmful to indoor air quality",
+    "verdict": "supported",
+    "evidence_level": "strong",
+    "summary": "Burning incense produces significant PM2.5, PM10, CO, benzene, toluene, and formaldehyde. Can raise indoor PM2.5 by 40-100 μg/m³ in typical Indian rooms. Associated with respiratory symptoms in poorly ventilated spaces.",
+    "sources": [
+      {
+        "title": "Emissions from burning incense — Jetter et al., Environ Sci Technol",
+        "year": 2002
+      },
+      {
+        "title": "Indoor air quality and incense in Indian households — Pant et al., Atmospheric Environment",
+        "year": 2020
+      }
+    ]
+  },
+  {
+    "id": "mosquito_coils_dangerous",
+    "claim": "Mosquito coils are dangerous for indoor air quality",
+    "verdict": "supported",
+    "evidence_level": "strong",
+    "summary": "A single mosquito coil emits PM2.5 equivalent to 75-137 cigarettes (by mass). Contains pyrethrin, formaldehyde, and other toxicants. Significant respiratory health risks from chronic exposure, especially for children.",
+    "sources": [
+      {
+        "title": "Mosquito coil emissions — Liu et al., Environmental Health Perspectives",
+        "year": 2003
+      },
+      {
+        "title": "Toxicology of mosquito coil smoke — Chang & Lin, J Toxicol Environ Health",
+        "year": 2008
+      }
+    ]
+  },
+  {
+    "id": "salt_lamps_purify",
+    "claim": "Salt lamps purify air by releasing negative ions",
+    "verdict": "myth_busted",
+    "evidence_level": "limited",
+    "summary": "No peer-reviewed evidence supports that Himalayan salt lamps release meaningful negative ions or improve IAQ. The heat from the low-wattage bulb is insufficient for significant ionization. Perceived benefits are likely placebo.",
+    "sources": [
+      { "title": "Negative Air Ions and Effects — Perez et al., Int J Mol Sci", "year": 2013 },
+      { "title": "Review of ionizer and salt lamp claims — Columbia University", "year": 2019 }
+    ]
+  },
+  {
+    "id": "ac_filters_clean_air",
+    "claim": "AC filters clean the air effectively",
+    "verdict": "partially_supported",
+    "evidence_level": "moderate",
+    "summary": "Standard AC filters capture large dust but have limited PM2.5 effectiveness. Some premium split ACs include HEPA-like filters that reduce PM2.5 by 20-40%. Regular filter cleaning is essential — dirty filters worsen air quality.",
+    "sources": [
+      {
+        "title": "Residential HVAC filtration — Zhao et al., Building and Environment",
+        "year": 2019
+      },
+      { "title": "BEE India air conditioner filtration standards", "year": 2023 }
+    ]
+  },
+  {
+    "id": "wet_mopping_reduces_pm",
+    "claim": "Wet mopping reduces PM more than dry sweeping",
+    "verdict": "supported",
+    "evidence_level": "moderate",
+    "summary": "Dry sweeping re-suspends settled PM, temporarily increasing indoor PM2.5 by 20-50 μg/m³. Wet mopping traps particles without re-suspension. Wet cleaning reduces indoor PM by 30-50% compared to dry methods.",
+    "sources": [
+      { "title": "Resuspension of particles — Qian et al., Atmospheric Environment", "year": 2014 },
+      { "title": "Impact of cleaning on indoor PM — Corsi et al., Indoor Air", "year": 2008 }
+    ]
+  },
+  {
+    "id": "cooking_lids_reduce_emissions",
+    "claim": "Cooking with lids reduces emissions and energy use",
+    "verdict": "supported",
+    "evidence_level": "strong",
+    "summary": "Covering pots reduces energy consumption by 25-30% by trapping steam and heat. Also reduces cooking aerosol emissions into indoor air. Pressure cooking further amplifies these benefits.",
+    "sources": [
+      {
+        "title": "Energy efficiency in Indian domestic cooking — Pohekar & Ramachandran, Energy",
+        "year": 2006
+      },
+      {
+        "title": "Cooking emissions and ventilation — Abdullahi et al., Sci Total Environ",
+        "year": 2013
+      }
+    ]
+  },
+  {
+    "id": "cross_ventilation_better",
+    "claim": "Cross ventilation is better than single-side ventilation",
+    "verdict": "supported",
+    "evidence_level": "strong",
+    "summary": "Cross ventilation (openings on opposite walls) provides 2-5x higher air exchange rates compared to single-side ventilation, more effectively diluting indoor pollutants.",
+    "sources": [
+      {
+        "title": "Natural ventilation in buildings — Allocca et al., Building and Environment",
+        "year": 2003
+      },
+      {
+        "title": "Cross-ventilation in tropical buildings — Tantasavasdi et al., Energy and Buildings",
+        "year": 2001
+      }
+    ]
+  },
+  {
+    "id": "diy_box_fan_filter_works",
+    "claim": "DIY box fan filters (Corsi-Rosenthal box) effectively reduce PM2.5",
+    "verdict": "supported",
+    "evidence_level": "moderate",
+    "summary": "The Corsi-Rosenthal box — MERV-13 filters on a box fan — reduces indoor PM2.5 by 60-70% in room-scale tests. Less effective than commercial HEPA but highly cost-effective (₹2000-3000 vs ₹10,000+).",
+    "sources": [
+      { "title": "Corsi-Rosenthal Box Effectiveness — Dal Porto et al., PNAS", "year": 2022 },
+      { "title": "DIY Air Cleaners Comparison — UC Davis", "year": 2021 }
+    ]
+  },
+  {
+    "id": "chimney_reduces_cooking_pollution",
+    "claim": "Kitchen chimney significantly reduces cooking-related indoor pollution",
+    "verdict": "supported",
+    "evidence_level": "strong",
+    "summary": "A properly installed kitchen chimney removes 60-80% of cooking-generated PM2.5, CO, and VOCs. Auto-clean chimneys with ≥1000 m³/h suction are most effective. Must be turned on before cooking and left running 5-10 min after.",
+    "sources": [
+      { "title": "Range hood effectiveness — Lunden et al., Indoor Air", "year": 2015 },
+      { "title": "Kitchen ventilation in Indian homes — IIT Delhi", "year": 2019 }
+    ]
+  },
+  {
+    "id": "air_purifying_paint",
+    "claim": "Air-purifying paints significantly clean indoor air",
+    "verdict": "partially_supported",
+    "evidence_level": "limited",
+    "summary": "Some paints contain activated carbon or photocatalytic TiO2 that break down small amounts of formaldehyde and VOCs. Effect is very slow and limited to painted surface area. Not a substitute for ventilation or filtration.",
+    "sources": [
+      {
+        "title": "Photocatalytic paints for IAQ — Chen & Poon, Building and Environment",
+        "year": 2009
+      },
+      { "title": "Review of functional coatings for IAQ — Martinez et al., Coatings", "year": 2020 }
+    ]
+  },
+  {
+    "id": "induction_better_iaq",
+    "claim": "Induction cooking produces better IAQ than gas",
+    "verdict": "supported",
+    "evidence_level": "strong",
+    "summary": "Gas cooking produces NO2, CO, formaldehyde, and PM2.5 as combustion byproducts. Induction eliminates all combustion-related pollutants, reducing kitchen PM2.5 by 50-70% during cooking. Food-related emissions (oil smoke) remain.",
+    "sources": [
+      { "title": "Gas cooking and respiratory health — Gruenwald et al., IJERPH", "year": 2023 },
+      {
+        "title": "Pollutant emissions from gas and electric cooking — Kashtan et al., Environ Sci Technol",
+        "year": 2023
+      }
+    ]
+  },
+  {
+    "id": "exercise_timing_aqi",
+    "claim": "Timing outdoor exercise to low-AQI hours significantly reduces pollution exposure",
+    "verdict": "supported",
+    "evidence_level": "moderate",
+    "summary": "During exercise, breathing rate increases 5-10x, proportionally increasing pollutant inhalation. Exercising during peak traffic vs early morning can result in 2-4x higher PM2.5 intake dose.",
+    "sources": [
+      { "title": "Air pollution and exercise — Giles & Koehle, Br J Sports Med", "year": 2014 },
+      {
+        "title": "Inhaled dose of PM during exercise — Int Panis et al., Environ Health",
+        "year": 2010
+      }
+    ]
+  }
 ]

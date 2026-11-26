@@ -13,6 +13,10 @@
     "targetACH": 5,
     "purifierWatts": 55,
     "purifierHoursPerDay": 12,
+    "cadrRangeLowRatio": 0.85,
+    "cadrRangeHighRatio": 1.2,
+    "daysPerMonth": 30,
+    "daysPerYear": 365,
     "electricityRatePerKwh": 7.5,
     "lpgCylinderKg": 14.2,
     "lpgCylinderPrice": 903,
@@ -20,6 +24,46 @@
     "dieselRatePerLitre": 94,
     "petrolRatePerLitre": 103,
     "weeksPerYear": 52,
+    "biomassDailyKg": 5,
+    "carKmPerLitre": 14,
+    "twoWheelerKmPerLitre": 42,
+    "metroReturnFareINR": 80,
+    "acElectricityShare": 0.4,
+    "acSetpointSavingsRatio": 0.24,
+    "acCoolingMonthsPerYear": 6,
+    "ledBulbsReplacedDefault": 6,
+    "inductionKwhPerKgLpg": 12.8,
+    "gasThermalEfficiency": 0.4,
+    "inductionThermalEfficiency": 0.85,
+    "pressureCookerFuelSavingRatio": 0.2,
+    "plantForwardMealShiftRatio": 0.3,
+    "plantForwardAnnualSavingsPerMemberINR": 2400,
+    "compostingAnnualSavingsINR": 600,
+    "solarHeaterOffsetRatio": 0.85,
+    "overlapScaleFactor": 0.8,
+    "billSavingsLowRatio": 0.75,
+    "billSavingsHighRatio": 1.25,
+    "maxPm25CalibrationRatio": 10,
+    "minPm25CalibrationRatio": 0.1,
+    "exposureWeights": {
+      "ventilationMultiplier": { "good": 0.7, "moderate": 0.5, "poor": 0.3 },
+      "outdoorInfiltrationDivisor": 2.8,
+      "outdoorPointsCap": 35,
+      "cookingBase": {
+        "biomass": 35,
+        "lpg": 16,
+        "png": 13,
+        "induction": 2,
+        "electric": 2,
+        "other": 12
+      },
+      "exhaustReductionFactor": 0.35,
+      "smokePoints": { "mosquito_coil": 22, "tobacco": 25, "incense": 12 },
+      "poorVentTrappedApartment": 8,
+      "poorVentTrappedOther": 6,
+      "sensitiveMultiplier": 1.15,
+      "levelThresholds": { "moderate": 20, "elevated": 40, "high": 60 }
+    },
     "conservativeUnknowns": {
       "homeType": "apartment",
       "ventilation": "moderate",
@@ -58,10 +102,8 @@
       "windSpeedKmh": 4.2
     },
     "hourlyPm25": [
-      295, 280, 265, 250, 235, 215,
-      195, 210, 260, 290, 270, 240,
-      205, 185, 175, 190, 225, 275,
-      335, 385, 410, 390, 355, 320
+      295, 280, 265, 250, 235, 215, 195, 210, 260, 290, 270, 240, 205, 185, 175, 190, 225, 275, 335,
+      385, 410, 390, 355, 320
     ]
   },
   "dataSources": [

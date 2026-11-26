@@ -25,7 +25,7 @@ describe('SmogGuard UI Flows', () => {
   it('renders Landing Page with AQI hero, 24h PM2.5 bars, advisory chips, calibration, and sample demo', () => {
     renderAt('/');
     expect(screen.getByText(/SmogGuard — Household Air Protection/i)).toBeInTheDocument();
-    expect(screen.getByText(/24-Hour PM2\.5 Forecast/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /24-Hour PM2\.5 Forecast/i })).toBeInTheDocument();
     expect(screen.getByText(/Tailor for family member/i)).toBeInTheDocument();
 
     // Toggle "Pregnancy" chip and verify tailored advisory updates
@@ -59,7 +59,9 @@ describe('SmogGuard UI Flows', () => {
     );
     fireEvent.click(otherRadio);
     fireEvent.click(screen.getByRole('button', { name: /Next Step/i }));
-    expect(screen.getAllByText(/Please specify your "Other" answer for Home type/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/Please specify your "Other" answer for Home type/i).length
+    ).toBeGreaterThan(0);
 
     // Select "Not sure" -> validation passes
     const notSureRadio = Array.from(homeGroup.querySelectorAll('button')).find((b) =>
@@ -73,12 +75,16 @@ describe('SmogGuard UI Flows', () => {
     const sizeInput = screen.getByLabelText(/Household size/i);
     fireEvent.change(sizeInput, { target: { value: '99' } });
     fireEvent.click(screen.getByRole('button', { name: /Next Step/i }));
-    expect(screen.getAllByText(/Household size must be between 1 and 25/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Household size must be between 1 and 25/i).length).toBeGreaterThan(
+      0
+    );
 
     // Fix household size & go Next -> Step 3
     fireEvent.change(sizeInput, { target: { value: '3' } });
     fireEvent.click(screen.getByRole('button', { name: /Next Step/i }));
-    expect(screen.getByRole('heading', { name: /3\. Rooms, Kitchen & Indoor Sources/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /3\. Rooms, Kitchen & Indoor Sources/i })
+    ).toBeInTheDocument();
 
     // Back preserves Step 2 value (3)
     fireEvent.click(screen.getByRole('button', { name: /Back/i }));
@@ -87,11 +93,15 @@ describe('SmogGuard UI Flows', () => {
     // Advance through Step 3 and Step 4 to generate Report
     fireEvent.click(screen.getByRole('button', { name: /Next Step/i }));
     fireEvent.click(screen.getByRole('button', { name: /Next Step/i }));
-    expect(screen.getByRole('heading', { name: /4\. Daily Routine, Energy & Commute/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /4\. Daily Routine, Energy & Commute/i })
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Generate Smog & Air Quality Report/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /Smog and Air Quality Report/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /Smog and Air Quality Report/i })
+      ).toBeInTheDocument();
     });
 
     // Verify all 10 report sections exist
@@ -101,7 +111,7 @@ describe('SmogGuard UI Flows', () => {
     expect(screen.getByText(/4\. Top Indoor & Outdoor Pollution Sources/i)).toBeInTheDocument();
     expect(screen.getByText(/5\. Prioritized Preventive Measures/i)).toBeInTheDocument();
     expect(screen.getByText(/6\. Room-by-Room Plan & Clean Room Sizing/i)).toBeInTheDocument();
-    expect(screen.getByText(/7\. Hour-by-Hour Routine for Today/i)).toBeInTheDocument();
+    expect(screen.getByText(/7\. Low-Emission Daily Routine/i)).toBeInTheDocument();
     expect(screen.getByText(/8\. Direct Action Impact Cards/i)).toBeInTheDocument();
     expect(screen.getByText(/9\. Sustainable Alternatives & Payback/i)).toBeInTheDocument();
     expect(screen.getByText(/10\. Assumptions, Data Sources & Limitations/i)).toBeInTheDocument();

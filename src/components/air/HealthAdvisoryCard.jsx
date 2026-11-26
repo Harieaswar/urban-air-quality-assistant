@@ -15,9 +15,7 @@ export default function HealthAdvisoryCard({
   onToggleFamilyMember,
   showChips = true,
 }) {
-  const cleanIds = selectedFamilyIds.filter((id) =>
-    FAMILY_PROFILES.some((fp) => fp.id === id)
-  );
+  const cleanIds = selectedFamilyIds.filter((id) => FAMILY_PROFILES.some((fp) => fp.id === id));
   const advisory = getHealthAdvisory(pm25, cleanIds, aqiScale);
 
   return (
@@ -26,7 +24,8 @@ export default function HealthAdvisoryCard({
         <div>
           <span className="hero-eyebrow">🩺 MoHFW / NCDC Health Advisory</span>
           <h3>
-            <span aria-hidden="true">{advisory.icon}</span> {advisory.categoryLabel} Air Quality ({advisory.aqi})
+            <span aria-hidden="true">{advisory.icon}</span> {advisory.categoryLabel} Air Quality (
+            {advisory.aqi})
           </h3>
         </div>
       </div>
@@ -74,7 +73,9 @@ export default function HealthAdvisoryCard({
       <p className="medical-disclaimer" role="note">
         ⚠️ {advisory.disclaimer}
       </p>
-      <p className="source-footnote">Source: {advisory.source} ({advisory.year})</p>
+      <p className="source-footnote">
+        Source: {advisory.source} ({advisory.year})
+      </p>
     </GlassCard>
   );
 }

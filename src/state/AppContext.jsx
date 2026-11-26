@@ -1,10 +1,9 @@
+/**
+ * @fileoverview React Context provider and hook exposing SmogGuard state and Open-Meteo actions.
+ */
+
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import {
-  appReducer,
-  loadPersistedState,
-  persistState,
-  STORAGE_KEY,
-} from './sessionStore.js';
+import { appReducer, loadPersistedState, persistState, STORAGE_KEY } from './sessionStore.js';
 import {
   fetchAirAndWeather,
   buildSampleSevereSmogData,
@@ -14,15 +13,28 @@ import {
 
 const AppContext = createContext(null);
 
+function clearAppStorageKeys() {
+  localStorage.removeItem(STORAGE_KEY);
+  const cacheKeys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith(CACHE_KEY_PREFIX)) cacheKeys.push(k);
+  }
+  cacheKeys.forEach((k) => localStorage.removeItem(k));
+}
+
+/**
+ * Application state provider managing persistence, theme synchronization, and Open-Meteo fetching.
+ * @param {{ children: React.ReactNode }} props - Child tree.
+ * @returns {JSX.Element} Provider element.
+ */
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, null, loadPersistedState);
 
-  // Persist to localStorage on change
   useEffect(() => {
     persistState(state);
   }, [state]);
 
-  // Apply theme to document root
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', state.preferences.theme || 'dark');
   }, [state.preferences.theme]);
@@ -35,11 +47,7 @@ export function AppProvider({ children }) {
         forceRefresh,
         manualPm25,
       });
-      dispatch({
-        type: 'SET_AIR_DATA',
-        data,
-        error: data.isFallback ? data.notice : null,
-      });
+      dispatch({ type: 'SET_AIR_DATA', data, error: data.isFallback ? data.notice : null });
       return data;
     },
     []
@@ -49,11 +57,7 @@ export function AppProvider({ children }) {
     const sample = buildSampleSevereSmogData();
     dispatch({
       type: 'UPDATE_LOCATION',
-      payload: {
-        name: sample.locationName,
-        lat: sample.roundedLat,
-        lon: sample.roundedLon,
-      },
+      payload: { name: sample.locationName, lat: sample.roundedLat, lon: sample.roundedLon },
     });
     dispatch({
       type: 'SET_CALIBRATION',
@@ -77,15 +81,9 @@ export function AppProvider({ children }) {
 
   const deleteAllData = useCallback(() => {
     try {
-      localStorage.removeItem(STORAGE_KEY);
-      const keysToRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith(CACHE_KEY_PREFIX)) keysToRemove.push(k);
-      }
-      keysToRemove.forEach((k) => localStorage.removeItem(k));
-    } catch {
-      // ignore
+      clearAppStorageKeys();
+    } catch (err) {
+      console.warn('Could not clear some localStorage keys:', err);
     }
     dispatch({ type: 'DELETE_ALL' });
   }, []);
@@ -106,10 +104,12 @@ export function AppProvider({ children }) {
   );
 }
 
+/**
+ * Hook to access SmogGuard application state and dispatch helpers.
+ * @returns {Object} Store context `{ state, dispatch, loadLocationAir, loadSampleSevereSmog, applyManualAirReading, deleteAllData }`.
+ */
 export function useAppStore() {
   const ctx = useContext(AppContext);
-  if (!ctx) {
-    throw new Error('useAppStore must be used inside AppProvider');
-  }
+  if (!ctx) throw new Error('useAppStore must be used inside AppProvider');
   return ctx;
 }

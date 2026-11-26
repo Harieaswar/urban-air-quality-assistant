@@ -14,7 +14,7 @@ export default function ImpactCard({ action, impact, isSelected, onToggle }) {
     <article className="impact-card">
       <div className="impact-card-header">
         <div>
-          <h4 className="impact-card-title">{action.title}</h4>
+          <h3 className="impact-card-title">{action.title}</h3>
           <p className="impact-card-desc">{action.description}</p>
         </div>
         {onToggle && (
@@ -78,7 +78,8 @@ export default function ImpactCard({ action, impact, isSelected, onToggle }) {
             {impact.upfrontCostINR?.typical > 0 && (
               <p>
                 <strong>Planning upfront cost:</strong> {formatINR(impact.upfrontCostINR.min)}–
-                {formatINR(impact.upfrontCostINR.max)} (typical {formatINR(impact.upfrontCostINR.typical)}; estimate, verify locally)
+                {formatINR(impact.upfrontCostINR.max)} (typical{' '}
+                {formatINR(impact.upfrontCostINR.typical)}; estimate, verify locally)
               </p>
             )}
             {impact.inputs && Object.keys(impact.inputs).length > 0 && (
