@@ -3,6 +3,7 @@
  */
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import { StorageAccessError } from '../services/errors.js';
 import {
   fetchAirAndWeather,
   buildSampleSevereSmogData,
@@ -86,12 +87,17 @@ export function AppProvider({ children }) {
   }, [state.preferences.theme]);
 
   const deleteAllData = useCallback(() => {
+    let storageResult = { ok: true, error: null };
     try {
       clearAppStorageKeys();
     } catch (err) {
-      console.warn('Could not clear some localStorage keys:', err);
+      storageResult = {
+        ok: false,
+        error: new StorageAccessError('Could not clear some localStorage keys.', err),
+      };
     }
     dispatch({ type: 'DELETE_ALL' });
+    return storageResult;
   }, []);
 
   return (

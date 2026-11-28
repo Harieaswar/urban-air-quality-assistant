@@ -1,5 +1,5 @@
 /**
- * @fileoverview Plain-language input validation helpers for wizard fields and coordinates.
+ * @fileoverview Plain-language input validation helpers for wizard fields, coordinates, and JSON imports.
  */
 
 import { BOUNDS } from '@/constants';
@@ -93,4 +93,47 @@ export function validateChoiceWithOther(value, otherText, fieldLabel) {
     return { valid: false, error: `Please specify your "Other" answer for ${fieldLabel}.` };
   }
   return { valid: true, error: null };
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function hasValidRoomsField(rooms) {
+  if (rooms === undefined) return true;
+  if (!isPlainObject(rooms)) return false;
+  return rooms.list === undefined || Array.isArray(rooms.list);
+}
+
+function validateImportedShape(parsed) {
+  const imported = isPlainObject(parsed?.profile) ? parsed.profile : parsed;
+  const hasCoreSection =
+    isPlainObject(imported) && (isPlainObject(imported.location) || isPlainObject(imported.family));
+  if (!hasCoreSection) {
+    return {
+      valid: false,
+      data: null,
+      error: 'Missing required location or family sections in JSON.',
+    };
+  }
+  if (!hasValidRoomsField(imported.rooms)) {
+    return { valid: false, data: null, error: 'Invalid rooms structure in imported JSON.' };
+  }
+  return { valid: true, data: imported, error: null };
+}
+
+/**
+ * Parse and validate an exported SmogGuard profile or report JSON payload.
+ * @param {string} rawText - Raw JSON file text.
+ * @returns {{ valid: boolean, data: Object|null, error: string|null }} Structured import validation result.
+ */
+export function validateProfileImport(rawText) {
+  if (typeof rawText !== 'string' || !rawText.trim()) {
+    return { valid: false, data: null, error: 'Imported file is empty.' };
+  }
+  try {
+    return validateImportedShape(JSON.parse(rawText));
+  } catch (_err) {
+    return { valid: false, data: null, error: 'Malformed JSON syntax in imported file.' };
+  }
 }

@@ -1,11 +1,12 @@
 /**
- * @fileoverview JSON profile Export and Import setting sections with file validation feedback.
+ * @fileoverview JSON profile Export and Import setting sections with centralized validation feedback.
  */
 
 import React, { useState, useRef } from 'react';
 import GlassCard from '@/components/ui/GlassCard';
 import Button from '@/components/ui/Button';
 import { TIME_UNITS } from '@/constants';
+import { validateProfileImport } from '@/utils/validate';
 
 function downloadProfileSnapshot(state) {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
@@ -15,15 +16,6 @@ function downloadProfileSnapshot(state) {
   a.download = `smogguard-profile-${new Date().toISOString().slice(0, TIME_UNITS.ISO_DATE_PREFIX_LEN)}.json`;
   a.click();
   URL.revokeObjectURL(url);
-}
-
-function readImportedProfileJson(rawText) {
-  const parsed = JSON.parse(rawText);
-  const imported = parsed.profile ? parsed.profile : parsed;
-  if (!imported || typeof imported !== 'object' || (!imported.location && !imported.family)) {
-    throw new Error('Missing required location or family sections in JSON');
-  }
-  return imported;
 }
 
 function ExportProfileCard({ onExport }) {
@@ -90,14 +82,15 @@ export default function ProfileTransferCards({ state, dispatch }) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (evt) => {
-      try {
-        dispatch({ type: 'IMPORT_STATE', payload: readImportedProfileJson(evt.target.result) });
-        setImportError(false);
-        setImportStatus('✅ Profile imported! Your wizard answers and report have been updated.');
-      } catch (_err) {
+      const check = validateProfileImport(String(evt.target?.result || ''));
+      if (!check.valid) {
         setImportError(true);
         setImportStatus('❌ Invalid file format. Please select a valid SmogGuard JSON export.');
+        return;
       }
+      dispatch({ type: 'IMPORT_STATE', payload: check.data });
+      setImportError(false);
+      setImportStatus('✅ Profile imported! Your wizard answers and report have been updated.');
     };
     reader.readAsText(file);
   };

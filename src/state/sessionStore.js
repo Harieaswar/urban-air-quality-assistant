@@ -1,9 +1,16 @@
 /**
- * @fileoverview Reducer and localStorage persistence helpers for SmogGuard single-source store.
+ * @fileoverview Reducer handlers for SmogGuard single-source application state.
  */
 
 import { BOUNDS } from '../constants/index.js';
-import { STORAGE_KEY, createDefaultRoom, createInitialState } from './initialState.js';
+import { createDefaultRoom, createInitialState } from './initialState.js';
+import {
+  loadPersistedState,
+  loadPersistedStateWithStatus,
+  persistState,
+} from './storagePersistence.js';
+
+export { loadPersistedState, loadPersistedStateWithStatus, persistState };
 
 const MIN_STEP = BOUNDS.MIN_STEPS;
 const MAX_STEP = BOUNDS.MAX_STEPS;
@@ -131,55 +138,4 @@ const ACTION_HANDLERS = {
 export function appReducer(state, action) {
   const handler = ACTION_HANDLERS[action?.type];
   return handler ? handler(state, action, Date.now()) : state;
-}
-
-function mergePersistedSections(parsed) {
-  const base = createInitialState();
-  const parsedRooms = parsed.rooms || {};
-  const list =
-    Array.isArray(parsedRooms.list) && parsedRooms.list.length > 0
-      ? parsedRooms.list
-      : base.rooms.list;
-  return {
-    ...base,
-    ...parsed,
-    location: { ...base.location, ...(parsed.location || {}) },
-    family: { ...base.family, ...(parsed.family || {}) },
-    rooms: { ...base.rooms, ...parsedRooms, list },
-    routine: { ...base.routine, ...(parsed.routine || {}) },
-    air: { ...base.air, ...(parsed.air || {}), loading: false },
-    preferences: { ...base.preferences, ...(parsed.preferences || {}) },
-  };
-}
-
-/**
- * Load persisted SmogGuard state from localStorage, falling back cleanly if corrupted.
- * @returns {Object} Restored or fresh initial state.
- */
-export function loadPersistedState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return createInitialState();
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return createInitialState();
-    return mergePersistedSections(parsed);
-  } catch (err) {
-    console.warn('Corrupted saved profile found in localStorage; resetting to defaults:', err);
-    return createInitialState();
-  }
-}
-
-/**
- * Persist SmogGuard application state to localStorage.
- * @param {Object} state - Current state tree.
- * @returns {boolean} True if saved successfully.
- */
-export function persistState(state) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    return true;
-  } catch (err) {
-    console.warn('Unable to persist profile to localStorage:', err);
-    return false;
-  }
 }
