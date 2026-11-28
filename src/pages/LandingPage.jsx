@@ -109,7 +109,10 @@ export default function LandingPage() {
           onLoadSampleDemo={loadSampleSevereSmog}
           onApplyManualPm25={applyManualAirReading}
           onRefreshLive={
-            state.location.lat != null && state.location.lon != null
+            state.location.lat !== null &&
+            state.location.lat !== undefined &&
+            state.location.lon !== null &&
+            state.location.lon !== undefined
               ? () =>
                   loadLocationAir({
                     lat: state.location.lat,

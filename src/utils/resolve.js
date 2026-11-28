@@ -2,6 +2,10 @@
  * @fileoverview Shared resolution and factor lookup helpers for pure calculators.
  */
 
+export function isPresent(value) {
+  return value !== null && value !== undefined;
+}
+
 /**
  * Resolve an optional or `'unknown'` wizard field using a conservative default.
  * @param {*} value - Raw field value from wizard state.
@@ -9,7 +13,9 @@
  * @returns {*} Resolved value.
  */
 export function resolveWithFallback(value, fallback) {
-  return value == null || value === '' || value === 'unknown' ? fallback : value;
+  return value === null || value === undefined || value === '' || value === 'unknown'
+    ? fallback
+    : value;
 }
 
 /**

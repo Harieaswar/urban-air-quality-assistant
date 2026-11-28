@@ -15,7 +15,13 @@ const MAX_MONTHLY_KWH = 5000;
 
 function validateLocationStep(state) {
   const errs = {};
-  if (!state.location.name || state.location.lat == null || state.location.lon == null) {
+  if (
+    !state.location.name ||
+    state.location.lat === null ||
+    state.location.lat === undefined ||
+    state.location.lon === null ||
+    state.location.lon === undefined
+  ) {
     errs.location = 'Please select a place from the search box or enter coordinates manually.';
   }
   const ht = validateChoiceWithOther(

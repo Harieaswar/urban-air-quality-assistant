@@ -33,11 +33,17 @@ export function calculatePurifierSizing(
   targetACH = DEFAULTS.targetACH
 ) {
   const safeArea =
-    roomSizeSqM === 'unknown' || roomSizeSqM == null || Number(roomSizeSqM) <= 0
+    roomSizeSqM === 'unknown' ||
+    roomSizeSqM === null ||
+    roomSizeSqM === undefined ||
+    Number(roomSizeSqM) <= 0
       ? CONSERVATIVE_UNKNOWNS.roomAreaSqM
       : Number(roomSizeSqM);
   const safeHeight =
-    ceilingHeightM === 'unknown' || ceilingHeightM == null || Number(ceilingHeightM) <= 0
+    ceilingHeightM === 'unknown' ||
+    ceilingHeightM === null ||
+    ceilingHeightM === undefined ||
+    Number(ceilingHeightM) <= 0
       ? DEFAULTS.ceilingHeightM
       : Number(ceilingHeightM);
 

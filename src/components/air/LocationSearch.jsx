@@ -3,9 +3,9 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import ManualCoordsBox from './ManualCoordsBox';
 import { searchPlaces } from '@/services/openMeteo';
 import { API_CONFIG } from '@/data/constants';
-import ManualCoordsBox from './ManualCoordsBox';
 
 /**
  * Accessible Open-Meteo place autocomplete with 300ms debounce, AbortController,
@@ -186,8 +186,12 @@ export default function LocationSearch({
                   id={`place-option-${idx}`}
                   role="option"
                   aria-selected={idx === activeIndex}
+                  tabIndex={-1}
                   className={`autocomplete-option ${idx === activeIndex ? 'active' : ''}`}
                   onClick={() => selectPlace(place)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') selectPlace(place);
+                  }}
                 >
                   <span>{place.displayName}</span>
                   <span className="autocomplete-coords">

@@ -12,13 +12,13 @@ import { validateCoordinates } from '@/utils/validate';
  * @returns {JSX.Element} Manual coordinate entry box.
  */
 export default function ManualCoordsBox({ lat, lon, onApply }) {
-  const [manualLat, setManualLat] = useState(lat != null ? String(lat) : '');
-  const [manualLon, setManualLon] = useState(lon != null ? String(lon) : '');
+  const [manualLat, setManualLat] = useState(lat !== null && lat !== undefined ? String(lat) : '');
+  const [manualLon, setManualLon] = useState(lon !== null && lon !== undefined ? String(lon) : '');
   const [coordError, setCoordError] = useState('');
 
   useEffect(() => {
-    if (lat != null) setManualLat(String(lat));
-    if (lon != null) setManualLon(String(lon));
+    if (lat !== null && lat !== undefined) setManualLat(String(lat));
+    if (lon !== null && lon !== undefined) setManualLon(String(lon));
   }, [lat, lon]);
 
   const handleApplyCoords = () => {

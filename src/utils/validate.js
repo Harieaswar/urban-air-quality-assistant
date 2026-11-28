@@ -16,7 +16,7 @@ const MAX_LON = 180;
  */
 export function validatePositiveNumber(value, fieldName, max = Infinity) {
   const num = Number(value);
-  if (value === '' || value == null || isNaN(num)) {
+  if (value === '' || value === null || value === undefined || isNaN(num)) {
     return { valid: false, value: 0, error: `Please enter a valid number for ${fieldName}.` };
   }
   if (num < 0) {
@@ -46,7 +46,7 @@ export function validatePositiveNumber(value, fieldName, max = Infinity) {
  */
 export function validateRange(value, min, max, fieldName) {
   const num = Number(value);
-  if (value === '' || value == null || isNaN(num)) {
+  if (value === '' || value === null || value === undefined || isNaN(num)) {
     return { valid: false, value: min, error: `Please enter a number for ${fieldName}.` };
   }
   if (num < min || num > max) {
@@ -80,7 +80,12 @@ export function validateChoiceWithOther(value, otherText, fieldLabel) {
   if (value === 'unknown') {
     return { valid: true, error: null };
   }
-  if (value == null || value === '' || (Array.isArray(value) && value.length === 0)) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === '' ||
+    (Array.isArray(value) && value.length === 0)
+  ) {
     return {
       valid: false,
       error: `Please choose an option for ${fieldLabel} (or select "Not sure").`,

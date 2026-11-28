@@ -120,20 +120,21 @@ export function resolveEffectiveAirSeries(
   referenceHour = new Date().getHours()
 ) {
   const rawHourly = airData?.hourlyData || [];
-  const calibratedPm25 =
-    calibration?.enabled && calibration?.value != null
-      ? calibration.mode === 'aqi'
-        ? aqiToApproxPm25(calibration.value, aqiScale)
-        : Number(calibration.value)
-      : null;
+  const hasCal =
+    calibration?.enabled && calibration?.value !== null && calibration?.value !== undefined;
+  const calibratedPm25 = hasCal
+    ? calibration.mode === 'aqi'
+      ? aqiToApproxPm25(calibration.value, aqiScale)
+      : Number(calibration.value)
+    : null;
 
   const effectiveHourly =
-    calibratedPm25 != null
+    calibratedPm25 !== null
       ? calibrateHourlyPm25(rawHourly, calibratedPm25, referenceHour)
       : rawHourly;
 
   const effectivePm25 =
-    calibratedPm25 != null
+    calibratedPm25 !== null
       ? calibratedPm25
       : (airData?.currentPm25 ?? effectiveHourly[0]?.pm25 ?? 0);
 

@@ -137,8 +137,8 @@ export function buildManualAirData({
   return {
     mode: 'manual',
     locationName,
-    roundedLat: lat != null ? roundCoordinate(lat) : null,
-    roundedLon: lon != null ? roundCoordinate(lon) : null,
+    roundedLat: lat !== null && lat !== undefined ? roundCoordinate(lat) : null,
+    roundedLon: lon !== null && lon !== undefined ? roundCoordinate(lon) : null,
     hourlyData,
     currentPm25: val,
     weather: null,

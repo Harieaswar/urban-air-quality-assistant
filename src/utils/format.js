@@ -12,7 +12,7 @@ const NOON_HOUR = 12;
  * @returns {string} Formatted CO₂e string.
  */
 export function formatCO2(kg) {
-  if (kg == null || isNaN(kg)) return '0 kg CO₂e';
+  if (kg === null || kg === undefined || isNaN(kg)) return '0 kg CO₂e';
   if (kg >= KG_PER_TONNE) return `${(kg / KG_PER_TONNE).toFixed(1)} tonnes CO₂e`;
   return `${Math.round(kg)} kg CO₂e`;
 }
@@ -23,7 +23,7 @@ export function formatCO2(kg) {
  * @returns {string} Formatted currency string.
  */
 export function formatINR(amount) {
-  if (amount == null || isNaN(amount)) return '₹0';
+  if (amount === null || amount === undefined || isNaN(amount)) return '₹0';
   const num = Math.round(amount);
   const str = Math.abs(num).toString();
   let result = '';

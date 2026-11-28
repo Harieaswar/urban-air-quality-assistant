@@ -3,8 +3,8 @@
  */
 
 import advisoriesData from '../data/advisories.json';
-import { pm25ToAqi } from './aqi.js';
 import { getAqiCategory } from '../data/constants.js';
+import { pm25ToAqi } from './aqi.js';
 
 /**
  * Build MoHFW/NCDC health advisory text tailored to selected sensitive family profiles.

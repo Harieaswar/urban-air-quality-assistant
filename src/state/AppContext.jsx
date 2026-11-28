@@ -3,13 +3,13 @@
  */
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import { appReducer, loadPersistedState, persistState, STORAGE_KEY } from './sessionStore.js';
 import {
   fetchAirAndWeather,
   buildSampleSevereSmogData,
   buildManualAirData,
   CACHE_KEY_PREFIX,
 } from '../services/openMeteo.js';
+import { appReducer, loadPersistedState, persistState, STORAGE_KEY } from './sessionStore.js';
 
 const AppContext = createContext(null);
 

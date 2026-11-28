@@ -3,9 +3,9 @@
  */
 
 import React, { useState } from 'react';
-import GlassCard from '@/components/ui/GlassCard';
 import Pm25HourlyChart from './Pm25HourlyChart';
 import MonitorCalibrateForm from './MonitorCalibrateForm';
+import GlassCard from '@/components/ui/GlassCard';
 import { evaluateAqi, resolveEffectiveAirSeries } from '@/calculators/aqi';
 import { calculateAirWindow } from '@/calculators/airWindow';
 import { formatTimestamp } from '@/utils/format';
@@ -49,13 +49,16 @@ export default function AqiHeroCard({
                 : '📡 Local Air Quality Monitor'}
           </span>
           <h2 className="hero-location">{airData?.locationName || 'Location not selected'}</h2>
-          {airData?.roundedLat != null && airData?.roundedLon != null && (
-            <p className="hero-meta">
-              Rounded coords: {Number(airData.roundedLat).toFixed(1)}°,{' '}
-              {Number(airData.roundedLon).toFixed(1)}° • Updated{' '}
-              {formatTimestamp(airData.fetchedAt)}
-            </p>
-          )}
+          {airData?.roundedLat !== null &&
+            airData?.roundedLat !== undefined &&
+            airData?.roundedLon !== null &&
+            airData?.roundedLon !== undefined && (
+              <p className="hero-meta">
+                Rounded coords: {Number(airData.roundedLat).toFixed(1)}°,{' '}
+                {Number(airData.roundedLon).toFixed(1)}° • Updated{' '}
+                {formatTimestamp(airData.fetchedAt)}
+              </p>
+            )}
         </div>
 
         <div className="scale-toggle" role="group" aria-label="AQI scale selector">
@@ -118,15 +121,18 @@ export default function AqiHeroCard({
               </div>
               {airData?.weather && (
                 <div className="weather-chips">
-                  {airData.weather.temperatureC != null && (
-                    <span>🌡️ {airData.weather.temperatureC}°C</span>
-                  )}
-                  {airData.weather.humidityPct != null && (
-                    <span>💧 {airData.weather.humidityPct}% RH</span>
-                  )}
-                  {airData.weather.windSpeedKmh != null && (
-                    <span>💨 {airData.weather.windSpeedKmh} km/h</span>
-                  )}
+                  {airData.weather.temperatureC !== null &&
+                    airData.weather.temperatureC !== undefined && (
+                      <span>🌡️ {airData.weather.temperatureC}°C</span>
+                    )}
+                  {airData.weather.humidityPct !== null &&
+                    airData.weather.humidityPct !== undefined && (
+                      <span>💧 {airData.weather.humidityPct}% RH</span>
+                    )}
+                  {airData.weather.windSpeedKmh !== null &&
+                    airData.weather.windSpeedKmh !== undefined && (
+                      <span>💨 {airData.weather.windSpeedKmh} km/h</span>
+                    )}
                 </div>
               )}
             </div>
@@ -150,7 +156,7 @@ export default function AqiHeroCard({
             <button type="button" className="btn btn--secondary" onClick={onLoadSampleDemo}>
               🌫️ Sample severe-smog demo
             </button>
-            {airData?.roundedLat != null && onRefreshLive && (
+            {airData?.roundedLat !== null && airData?.roundedLat !== undefined && onRefreshLive && (
               <button type="button" className="btn btn--ghost" onClick={onRefreshLive}>
                 🔄 Refresh live Open-Meteo
               </button>

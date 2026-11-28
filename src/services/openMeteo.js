@@ -124,7 +124,9 @@ function normalizeHourlyResponse(aqRes) {
       hour,
       pm25: Math.max(0, Math.round(Number(val ?? 0) * 10) / 10),
       pm10:
-        Array.isArray(pm10Arr) && pm10Arr[idx] != null ? Math.round(Number(pm10Arr[idx])) : null,
+        Array.isArray(pm10Arr) && pm10Arr[idx] !== null && pm10Arr[idx] !== undefined
+          ? Math.round(Number(pm10Arr[idx]))
+          : null,
       timeLabel: `${String(hour).padStart(2, '0')}:00`,
     };
   });
@@ -140,7 +142,12 @@ function selectFailureFallback(reason, { cached, manualPm25, locationName, rLat,
       notice: `${reason} Showing previously cached forecast from ${cached.ageLabel}.`,
     };
   }
-  if (manualPm25 != null && Number.isFinite(Number(manualPm25)) && Number(manualPm25) >= 0) {
+  if (
+    manualPm25 !== null &&
+    manualPm25 !== undefined &&
+    Number.isFinite(Number(manualPm25)) &&
+    Number(manualPm25) >= 0
+  ) {
     const manual = buildManualAirData({ pm25: manualPm25, locationName, lat: rLat, lon: rLon });
     return {
       ...manual,

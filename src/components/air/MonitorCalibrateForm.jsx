@@ -21,7 +21,7 @@ export default function MonitorCalibrateForm({
 }) {
   const [calMode, setCalMode] = useState(calibration?.mode || 'pm25');
   const [calInput, setCalInput] = useState(
-    calibration?.value != null ? String(calibration.value) : ''
+    calibration?.value !== null && calibration?.value !== undefined ? String(calibration.value) : ''
   );
   const [calError, setCalError] = useState('');
 
