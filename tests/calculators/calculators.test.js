@@ -29,7 +29,7 @@ import {
   validateCoordinates,
   validateChoiceWithOther,
 } from '@/utils/validate';
-import { getAqiCategory } from '@/data/constants';
+import { getAqiCategory } from '@/constants';
 import factorsData from '@/data/factors.json';
 import actionsData from '@/data/actions.json';
 

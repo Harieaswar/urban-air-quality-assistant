@@ -2,7 +2,7 @@
  * @fileoverview Pure room-wise air purifier CADR sizing and clean-room selection calculator.
  */
 
-import { DEFAULTS, CONSERVATIVE_UNKNOWNS } from '../data/constants.js';
+import { DEFAULTS, CONSERVATIVE_UNKNOWNS } from '../constants/index.js';
 
 const GRID_FACTOR_INDIA = 0.82;
 const CLEAN_ROOM_WEIGHTS = {

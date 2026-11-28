@@ -2,64 +2,13 @@
  * @fileoverview Report Sections 8–10: Action Impact Cards, Sustainable Alternatives with "Show the math", and Assumptions.
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import GlassCard from '@/components/ui/GlassCard';
 import ImpactCard from '@/components/cards/ImpactCard';
+import AlternativeRow from '@/components/report/AlternativeRow';
 import assumptionsData from '@/data/assumptions.json';
-import { formatCO2, formatINR, formatRange } from '@/utils/format';
-
-function AlternativeRow({ action, impact }) {
-  const [showMath, setShowMath] = useState(false);
-
-  return (
-    <>
-      <tr>
-        <td>
-          <strong>{action.title}</strong>
-          <div className="table-sub">{impact.exposureChange}</div>
-          <button
-            type="button"
-            className="show-math-toggle no-print"
-            aria-expanded={showMath}
-            onClick={() => setShowMath((v) => !v)}
-          >
-            {showMath ? '▼' : '▶'} Show the math
-          </button>
-        </td>
-        <td>{formatCO2(impact.co2SavedKg.central)}</td>
-        <td>{formatINR(impact.moneySavedINR)}/yr</td>
-        <td>
-          {impact.upfrontCostINR.typical > 0
-            ? `${formatINR(impact.upfrontCostINR.min)}–${formatINR(impact.upfrontCostINR.max)}`
-            : '₹0'}
-        </td>
-        <td>{impact.payback.label}</td>
-      </tr>
-      {showMath && (
-        <tr className="math-detail-row">
-          <td colSpan={5}>
-            <div className="show-math-content">
-              <p>
-                <strong>Formula:</strong> {impact.formula}
-              </p>
-              {impact.sources?.length > 0 && (
-                <p>
-                  <strong>Sources:</strong> {impact.sources.join(' | ')}
-                </p>
-              )}
-              {impact.assumptions?.length > 0 && (
-                <p>
-                  <strong>Assumptions:</strong> {impact.assumptions.join('; ')}
-                </p>
-              )}
-            </div>
-          </td>
-        </tr>
-      )}
-    </>
-  );
-}
+import { formatINR, formatRange } from '@/utils/format';
 
 /**
  * Render Report Sections 8 through 10.

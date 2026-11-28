@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { API_CONFIG } from '@/data/constants';
+import { BOUNDS } from '@/constants';
 import { validateRange } from '@/utils/validate';
 
 /**
@@ -27,7 +27,7 @@ export default function MonitorCalibrateForm({
 
   const handleApplyCalibrate = (e) => {
     e.preventDefault();
-    const maxAllowed = calMode === 'aqi' ? API_CONFIG.MAX_AQI : API_CONFIG.MAX_PM25;
+    const maxAllowed = calMode === 'aqi' ? BOUNDS.MAX_AQI : BOUNDS.MAX_PM25;
     const label = calMode === 'aqi' ? 'Monitor AQI' : 'Monitor PM2.5 (µg/m³)';
     const check = validateRange(calInput, 0, maxAllowed, label);
     if (!check.valid) {
@@ -45,7 +45,7 @@ export default function MonitorCalibrateForm({
   };
 
   const handleManualFallback = () => {
-    const check = validateRange(calInput, 0, API_CONFIG.MAX_PM25, 'Manual PM2.5 (µg/m³)');
+    const check = validateRange(calInput, 0, BOUNDS.MAX_PM25, 'Manual PM2.5 (µg/m³)');
     if (!check.valid) {
       setCalError(check.error);
       return;

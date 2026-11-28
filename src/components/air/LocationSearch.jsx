@@ -2,10 +2,9 @@
  * @fileoverview ARIA combobox place search autocomplete powered by Open-Meteo Geocoding API.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import ManualCoordsBox from './ManualCoordsBox';
-import { searchPlaces } from '@/services/openMeteo';
-import { API_CONFIG } from '@/data/constants';
+import { useLocationSearch } from '@/hooks';
 
 /**
  * Accessible Open-Meteo place autocomplete with 300ms debounce, AbortController,
@@ -21,116 +20,23 @@ export default function LocationSearch({
   errorId,
   hasError,
 }) {
-  const [query, setQuery] = useState(locationName || '');
-  const [results, setResults] = useState([]);
-  const [status, setStatus] = useState('idle');
-  const [statusMsg, setStatusMsg] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const [showManual, setShowManual] = useState(false);
+  const {
+    query,
+    setQuery,
+    results,
+    status,
+    statusMsg,
+    isOpen,
+    setIsOpen,
+    activeIndex,
+    showManual,
+    setShowManual,
+    selectPlace,
+    applyManualCoords,
+    handleKeyDown,
+  } = useLocationSearch({ initialName: locationName, onSelectLocation });
 
-  const abortRef = useRef(null);
-  const skipNextFetchRef = useRef(false);
   const listId = 'location-autocomplete-listbox';
-
-  useEffect(() => {
-    setQuery(locationName || '');
-  }, [locationName]);
-
-  useEffect(() => {
-    if (skipNextFetchRef.current) {
-      skipNextFetchRef.current = false;
-      return undefined;
-    }
-
-    const trimmed = query.trim();
-    if (trimmed.length < API_CONFIG.GEOCODING_MIN_CHARS) {
-      if (abortRef.current) abortRef.current.abort();
-      setResults([]);
-      setStatus('idle');
-      setStatusMsg('');
-      setIsOpen(false);
-      return undefined;
-    }
-
-    const timer = setTimeout(async () => {
-      if (abortRef.current) abortRef.current.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-
-      setStatus('loading');
-      setStatusMsg('Searching locations...');
-      setIsOpen(true);
-
-      try {
-        const res = await searchPlaces(trimmed, { signal: controller.signal });
-        if (controller.signal.aborted) return;
-
-        if (res.status === 'ok') {
-          setResults(res.results);
-          setStatus('ok');
-          setStatusMsg(
-            `${res.results.length} matching place${res.results.length === 1 ? '' : 's'} available.`
-          );
-          setActiveIndex(-1);
-        } else if (res.status === 'empty') {
-          setResults([]);
-          setStatus('empty');
-          setStatusMsg('No matches found.');
-        } else if (res.status === 'unavailable') {
-          setResults([]);
-          setStatus('unavailable');
-          setStatusMsg('Search unavailable, enter coordinates manually');
-          setShowManual(true);
-        }
-      } catch (err) {
-        if (err?.name !== 'AbortError') {
-          console.warn('Place search failed:', err);
-          setStatus('unavailable');
-          setStatusMsg('Search unavailable, enter coordinates manually');
-          setShowManual(true);
-        }
-      }
-    }, API_CONFIG.GEOCODING_DEBOUNCE_MS);
-
-    return () => {
-      clearTimeout(timer);
-      if (abortRef.current) abortRef.current.abort();
-    };
-  }, [query]);
-
-  const selectPlace = (place) => {
-    skipNextFetchRef.current = true;
-    setQuery(place.displayName);
-    setIsOpen(false);
-    setActiveIndex(-1);
-    setStatusMsg(`Selected ${place.displayName}`);
-    onSelectLocation({ name: place.displayName, lat: place.lat, lon: place.lon });
-  };
-
-  const handleKeyDown = (e) => {
-    if (!isOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && results.length > 0) {
-      setIsOpen(true);
-      setActiveIndex(0);
-      e.preventDefault();
-      return;
-    }
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setActiveIndex((prev) => (results.length === 0 ? -1 : (prev + 1) % results.length));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setActiveIndex((prev) =>
-        results.length === 0 ? -1 : (prev - 1 + results.length) % results.length
-      );
-    } else if (e.key === 'Enter' && isOpen && activeIndex >= 0 && results[activeIndex]) {
-      e.preventDefault();
-      selectPlace(results[activeIndex]);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setActiveIndex(-1);
-    }
-  };
 
   return (
     <div className="location-search">
@@ -146,8 +52,9 @@ export default function LocationSearch({
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (results.length > 0 || status === 'empty' || status === 'unavailable')
+            if (results.length > 0 || status === 'empty' || status === 'unavailable') {
               setIsOpen(true);
+            }
           }}
           placeholder="Type any city or town (min 2 letters, e.g. Salem, Tambaram, Delhi)..."
           role="combobox"
@@ -222,18 +129,7 @@ export default function LocationSearch({
         </button>
       </div>
 
-      {showManual && (
-        <ManualCoordsBox
-          lat={lat}
-          lon={lon}
-          onApply={(loc) => {
-            skipNextFetchRef.current = true;
-            setQuery(loc.name);
-            setIsOpen(false);
-            onSelectLocation(loc);
-          }}
-        />
-      )}
+      {showManual && <ManualCoordsBox lat={lat} lon={lon} onApply={applyManualCoords} />}
     </div>
   );
 }

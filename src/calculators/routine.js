@@ -2,7 +2,7 @@
  * @fileoverview Pure builder for 4-tier prioritized preventive measures and hour-by-hour daily routines.
  */
 
-import { PRIORITY_TIERS, CONSERVATIVE_UNKNOWNS } from '../data/constants.js';
+import { PRIORITY_TIERS, CONSERVATIVE_UNKNOWNS } from '../constants/index.js';
 import { formatHour } from '../utils/format.js';
 import { resolveWithFallback } from '../utils/resolve.js';
 

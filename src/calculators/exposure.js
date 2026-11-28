@@ -2,7 +2,7 @@
  * @fileoverview Pure indoor exposure heuristic and ranked pollution source breakdown.
  */
 
-import { DEFAULTS, CONSERVATIVE_UNKNOWNS } from '../data/constants.js';
+import { DEFAULTS, CONSERVATIVE_UNKNOWNS } from '../constants/index.js';
 import { resolveWithFallback } from '../utils/resolve.js';
 
 const WEIGHTS = DEFAULTS.exposureWeights;

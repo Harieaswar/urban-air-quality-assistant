@@ -1,11 +1,14 @@
 /**
- * @fileoverview LocalStorage caching and fallback payload builders for Open-Meteo air data.
+ * @fileoverview LocalStorage caching and offline/manual fallback payload builders for Open-Meteo.
  */
 
-import { API_CONFIG, SAMPLE_SEVERE_SMOG } from '../data/constants.js';
+import { API_CONFIG, SAMPLE_SEVERE_SMOG, TIME_UNITS } from '../constants/index.js';
+import { StorageAccessError } from './errors.js';
 
 export const CACHE_KEY_PREFIX = API_CONFIG.CACHE_KEY_PREFIX;
 export const CACHE_TTL_MS = API_CONFIG.CACHE_TTL_MS;
+
+const ROUND_DECIMALS = API_CONFIG.COORD_ROUND_SCALE;
 
 /**
  * Round latitude or longitude to 0.1 degrees (~11 km) for privacy.
@@ -15,7 +18,7 @@ export const CACHE_TTL_MS = API_CONFIG.CACHE_TTL_MS;
 export function roundCoordinate(value) {
   const num = Number(value);
   if (!Number.isFinite(num)) return 0;
-  return Math.round(num * 10) / 10;
+  return Math.round(num * ROUND_DECIMALS) / ROUND_DECIMALS;
 }
 
 /**
@@ -31,23 +34,23 @@ export function getCacheKey(lat, lon) {
 /**
  * Format cache age into a human-readable relative label.
  * @param {number} timestampMs - Epoch timestamp when payload was fetched.
- * @returns {string} Relative age string.
+ * @returns {string} Relative age text.
  */
 export function formatCacheAge(timestampMs) {
-  const diffMin = Math.max(0, Math.round((Date.now() - timestampMs) / 60000));
+  const diffMin = Math.max(0, Math.round((Date.now() - timestampMs) / TIME_UNITS.MS_PER_MINUTE));
   if (diffMin < 1) return 'just now';
   if (diffMin === 1) return '1 min ago';
-  if (diffMin < 60) return `${diffMin} mins ago`;
-  const hrs = Math.round(diffMin / 60);
-  return `${hrs} hr${hrs > 1 ? 's' : ''} ago`;
+  if (diffMin < TIME_UNITS.MINUTES_PER_HOUR) return `${diffMin} mins ago`;
+  const hours = Math.round(diffMin / TIME_UNITS.MINUTES_PER_HOUR);
+  return `${hours} hr${hours > 1 ? 's' : ''} ago`;
 }
 
 /**
- * Read cached air data entry from localStorage (returns stale entries flagged with `isFresh: false`).
- * Logs a warning and clears corrupted JSON entries explicitly.
+ * Read cached air-quality entry from localStorage (returns stale entries flagged with `isFresh: false`).
+ * Returns structured `{ payload, error }` rather than throwing or failing silently.
  * @param {number} lat - Latitude.
  * @param {number} lon - Longitude.
- * @returns {Object|null} Cached payload with `isFresh` and `ageLabel`, or null.
+ * @returns {Object|null} Cached payload with `isFresh`, `ageLabel`, or null if missing/corrupted.
  */
 export function readCachedAirData(lat, lon) {
   const key = getCacheKey(lat, lon);
@@ -64,9 +67,9 @@ export function readCachedAirData(lat, lon) {
       isFresh: ageMs <= CACHE_TTL_MS,
       ageLabel: formatCacheAge(parsed.fetchedAt),
     };
-  } catch (err) {
-    console.warn(`Discarding corrupted air-quality cache entry (${key}):`, err);
-    return null;
+  } catch (error) {
+    localStorage.removeItem(key);
+    return { corrupted: true, error: new StorageAccessError('Discarded unreadable cache', error) };
   }
 }
 
@@ -75,16 +78,18 @@ export function readCachedAirData(lat, lon) {
  * @param {number} lat - Latitude.
  * @param {number} lon - Longitude.
  * @param {Object} payload - Air-quality data object.
- * @returns {boolean} True if persisted cleanly, false otherwise.
+ * @returns {{ ok: boolean, error: StorageAccessError|null }} Persistence status.
  */
 export function writeCachedAirData(lat, lon, payload) {
   const key = getCacheKey(lat, lon);
   try {
     localStorage.setItem(key, JSON.stringify(payload));
-    return true;
-  } catch (err) {
-    console.warn(`Unable to cache Open-Meteo response (${key}):`, err);
-    return false;
+    return { ok: true, error: null };
+  } catch (error) {
+    return {
+      ok: false,
+      error: new StorageAccessError('Browser storage quota prevented caching air data.', error),
+    };
   }
 }
 
@@ -118,7 +123,7 @@ export function buildSampleSevereSmogData() {
 
 /**
  * Build a user-entered manual PM2.5 fallback payload.
- * @param {{ pm25: number, locationName?: string, lat?: number|null, lon?: number|null }} params - Manual reading parameters.
+ * @param {{ pm25: number, locationName?: string, lat?: number|null, lon?: number|null }} params - Manual inputs.
  * @returns {Object} Manual air-quality payload.
  */
 export function buildManualAirData({
@@ -127,11 +132,11 @@ export function buildManualAirData({
   lat = null,
   lon = null,
 }) {
-  const val = Math.max(0, Math.round(Number(pm25) || 0));
+  const value = Math.max(0, Math.round(Number(pm25) || 0));
   const now = Date.now();
   const hourlyData = Array.from({ length: API_CONFIG.FORECAST_HOURS }, (_, hour) => ({
     hour,
-    pm25: val,
+    pm25: value,
     timeLabel: `${String(hour).padStart(2, '0')}:00`,
   }));
   return {
@@ -140,12 +145,12 @@ export function buildManualAirData({
     roundedLat: lat !== null && lat !== undefined ? roundCoordinate(lat) : null,
     roundedLon: lon !== null && lon !== undefined ? roundCoordinate(lon) : null,
     hourlyData,
-    currentPm25: val,
+    currentPm25: value,
     weather: null,
     source: 'Manual PM2.5 / Monitor Entry (user-provided)',
     fetchedAt: now,
     timestampIso: new Date(now).toISOString(),
     isFallback: true,
-    notice: `Using your manual PM2.5 reading (${val} µg/m³). Hourly curve reflects this steady manual baseline until live forecast is available.`,
+    notice: `Using your manual PM2.5 reading (${value} µg/m³). Hourly curve reflects this steady manual baseline until live forecast is available.`,
   };
 }

@@ -5,7 +5,7 @@
 import React from 'react';
 import ChoiceGroup from '@/components/wizard/ChoiceGroup';
 import NumericUnknownField from '@/components/wizard/NumericUnknownField';
-import { CONSERVATIVE_UNKNOWNS } from '@/data/constants';
+import { CONSERVATIVE_UNKNOWNS } from '@/constants';
 import { sanitizeInput } from '@/utils/sanitize';
 
 /**

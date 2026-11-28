@@ -3,7 +3,7 @@
  */
 
 import advisoriesData from '../data/advisories.json';
-import { getAqiCategory } from '../data/constants.js';
+import { getAqiCategory } from '../constants/index.js';
 import { pm25ToAqi } from './aqi.js';
 
 /**

@@ -5,7 +5,7 @@
 import React from 'react';
 import LocationSearch from '@/components/air/LocationSearch';
 import ChoiceGroup from '@/components/wizard/ChoiceGroup';
-import { CONSERVATIVE_UNKNOWNS } from '@/data/constants';
+import { CONSERVATIVE_UNKNOWNS } from '@/constants';
 import { sanitizeInput } from '@/utils/sanitize';
 
 /**

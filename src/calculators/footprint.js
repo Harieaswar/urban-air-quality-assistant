@@ -2,7 +2,7 @@
  * @fileoverview Pure annual household carbon footprint calculator with low/central/high ranges.
  */
 
-import { DEFAULTS, CONSERVATIVE_UNKNOWNS } from '../data/constants.js';
+import { DEFAULTS, CONSERVATIVE_UNKNOWNS } from '../constants/index.js';
 import { resolveWithFallback, getFactorById } from '../utils/resolve.js';
 
 const MONTHS_PER_YEAR = 12;

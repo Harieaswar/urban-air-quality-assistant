@@ -1,5 +1,5 @@
 import React from 'react';
-import { EVIDENCE_LEVELS, EFFORT_LEVELS, COST_TIERS } from '@/data/constants';
+import { EVIDENCE_LEVELS, EFFORT_LEVELS, COST_TIERS } from '@/constants';
 
 /** Generic badge */
 export default function Badge({ children, variant = 'gray', icon }) {

@@ -2,29 +2,14 @@
  * @fileoverview Pure AQI conversion, WHO 2021 guideline ratio, and monitor calibration helpers.
  */
 
-import { getAqiCategory, WHO_GUIDELINES, DEFAULTS, API_CONFIG } from '../data/constants.js';
-
-/** CPCB India NAQI PM2.5 breakpoints (µg/m³ -> NAQI) */
-const INDIA_PM25_BREAKPOINTS = [
-  [0, 30, 0, 50],
-  [30.1, 60, 51, 100],
-  [60.1, 90, 101, 200],
-  [90.1, 120, 201, 300],
-  [120.1, 250, 301, 400],
-  [250.1, 500, 401, 500],
-];
-
-/** US EPA PM2.5 breakpoints (µg/m³ -> US AQI) */
-const US_PM25_BREAKPOINTS = [
-  [0, 9.0, 0, 50],
-  [9.1, 35.4, 51, 100],
-  [35.5, 55.4, 101, 150],
-  [55.5, 125.4, 151, 200],
-  [125.5, 225.4, 201, 300],
-  [225.5, 500.4, 301, 500],
-];
-
-const SEVERE_FALLBACK_PM25 = 350;
+import {
+  BOUNDS,
+  DEFAULTS,
+  INDIA_PM25_BREAKPOINTS,
+  US_PM25_BREAKPOINTS,
+  WHO_GUIDELINES,
+  getAqiCategory,
+} from '../constants/index.js';
 
 function interpolateLinear(conc, breakpoints) {
   const c = Math.max(0, Number(conc) || 0);
@@ -34,7 +19,7 @@ function interpolateLinear(conc, breakpoints) {
       return Math.round(((iHigh - iLow) / (cHigh - cLow)) * (clamped - cLow) + iLow);
     }
   }
-  return API_CONFIG.MAX_AQI;
+  return BOUNDS.MAX_AQI;
 }
 
 /**
@@ -55,7 +40,7 @@ export function pm25ToAqi(pm25, scale = 'india_naqi') {
  * @returns {number} Estimated PM2.5 (µg/m³).
  */
 export function aqiToApproxPm25(aqi, scale = 'india_naqi') {
-  const i = Math.max(API_CONFIG.MIN_AQI, Math.min(API_CONFIG.MAX_AQI, Number(aqi) || 0));
+  const i = Math.max(BOUNDS.MIN_AQI, Math.min(BOUNDS.MAX_AQI, Number(aqi) || 0));
   const bps = scale === 'us_aqi' ? US_PM25_BREAKPOINTS : INDIA_PM25_BREAKPOINTS;
   for (const [cLow, cHigh, iLow, iHigh] of bps) {
     if (i <= iHigh) {
@@ -63,7 +48,7 @@ export function aqiToApproxPm25(aqi, scale = 'india_naqi') {
       return Math.round((((clamped - iLow) / (iHigh - iLow)) * (cHigh - cLow) + cLow) * 10) / 10;
     }
   }
-  return SEVERE_FALLBACK_PM25;
+  return BOUNDS.SEVERE_FALLBACK_PM25;
 }
 
 /**

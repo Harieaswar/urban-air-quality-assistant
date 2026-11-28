@@ -4,7 +4,7 @@ import factorsData from '@/data/factors.json';
 import evidenceData from '@/data/evidence.json';
 import assumptionsData from '@/data/assumptions.json';
 import GlassCard from '@/components/ui/GlassCard';
-import { EVIDENCE_LEVELS } from '@/data/constants';
+import { EVIDENCE_LEVELS } from '@/constants';
 
 /**
  * Methodology Page — SmogGuard

@@ -4,12 +4,14 @@
 
 import React, { useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { AppProvider } from './state/AppContext';
-import LandingPage from './pages/LandingPage';
-import WizardPage from './pages/WizardPage';
-import ReportPage from './pages/ReportPage';
-import MethodologyPage from './pages/MethodologyPage';
-import SettingsPage from './pages/SettingsPage';
+import { AppProvider } from '@/state';
+import {
+  LandingPage,
+  WizardPage,
+  ReportPage,
+  MethodologyPage,
+  SettingsPage,
+} from '@/pages';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Home', title: 'SmogGuard — Home & Live Air Monitor' },

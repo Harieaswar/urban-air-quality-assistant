@@ -32,10 +32,11 @@ describe('Open-Meteo Client', () => {
   });
 
   it('handles corrupted localStorage cache entries explicitly', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     localStorage.setItem(`${CACHE_KEY_PREFIX}11.7_78.1`, '{not-valid-json');
-    expect(readCachedAirData(11.66, 78.14)).toBeNull();
-    expect(warnSpy).toHaveBeenCalled();
+    const corruptedResult = readCachedAirData(11.66, 78.14);
+    expect(corruptedResult?.corrupted).toBe(true);
+    expect(corruptedResult?.error?.name).toBe('StorageAccessError');
+    expect(localStorage.getItem(`${CACHE_KEY_PREFIX}11.7_78.1`)).toBeNull();
 
     localStorage.setItem(`${CACHE_KEY_PREFIX}11.7_78.1`, JSON.stringify({ hourlyData: [] }));
     expect(readCachedAirData(11.66, 78.14)).toBeNull();
@@ -132,12 +133,11 @@ describe('Open-Meteo Client', () => {
       return { ok: false, status: 500 }; // weather failure should degrade cleanly
     });
     globalThis.fetch = fetchMock;
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const live = await fetchAirAndWeather(11.664, 78.146, { locationName: 'Salem' });
     expect(live.mode).toBe('live');
     expect(live.weather).toBeNull();
-    expect(warnSpy).toHaveBeenCalled();
+    expect(live.notice).toContain('weather summary temporarily unavailable');
 
     // Fresh cache hit (no extra fetch)
     const cached = await fetchAirAndWeather(11.664, 78.146, { locationName: 'Salem' });

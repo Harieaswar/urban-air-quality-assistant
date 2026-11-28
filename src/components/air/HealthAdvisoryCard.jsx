@@ -1,7 +1,7 @@
 import React from 'react';
 import GlassCard from '@/components/ui/GlassCard';
 import { getHealthAdvisory } from '@/calculators/advisory';
-import { FAMILY_PROFILES } from '@/data/constants';
+import { FAMILY_PROFILES } from '@/constants';
 
 /**
  * Health Advisory Card — SmogGuard

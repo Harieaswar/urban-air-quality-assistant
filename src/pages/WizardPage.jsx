@@ -2,15 +2,16 @@
  * @fileoverview Guided 4-Step Wizard orchestrator with accessible step-heading focus management.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAppStore } from '@/state/AppContext';
-import GlassCard from '@/components/ui/GlassCard';
-import StepLocation from '@/components/wizard/StepLocation';
-import StepFamily from '@/components/wizard/StepFamily';
-import StepRooms from '@/components/wizard/StepRooms';
-import StepRoutine from '@/components/wizard/StepRoutine';
-import { validateWizardStep } from '@/components/wizard/wizardValidation';
+import React from 'react';
+import { useAppStore } from '@/state';
+import { useWizardController } from '@/hooks';
+import {
+  GlassCard,
+  StepLocation,
+  StepFamily,
+  StepRooms,
+  StepRoutine,
+} from '@/components';
 
 const STEPS = [
   { id: 1, label: '1. Location' },
@@ -25,45 +26,19 @@ const STEPS = [
  * @returns {JSX.Element} Wizard page.
  */
 export default function WizardPage() {
-  const navigate = useNavigate();
   const { state, dispatch, loadLocationAir } = useAppStore();
-  const step = state.wizardStep || 1;
-  const [errors, setErrors] = useState({});
-  const [confirmRestart, setConfirmRestart] = useState(false);
-
-  const stepHeadingRef = useRef(null);
-  const errorSummaryRef = useRef(null);
-  const isFirstRender = useRef(true);
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    stepHeadingRef.current?.focus();
-  }, [step]);
-
-  const handleNext = () => {
-    const errs = validateWizardStep(step, state);
-    setErrors(errs);
-    if (Object.keys(errs).length > 0) {
-      errorSummaryRef.current?.focus();
-      return;
-    }
-    if (step < 4) {
-      dispatch({ type: 'SET_STEP', step: step + 1 });
-      setErrors({});
-    } else {
-      dispatch({ type: 'COMPLETE_WIZARD' });
-      navigate('/report');
-    }
-  };
-
-  const handleBack = () => {
-    setErrors({});
-    if (step > 1) dispatch({ type: 'SET_STEP', step: step - 1 });
-    else navigate('/');
-  };
+  const {
+    step,
+    errors,
+    confirmRestart,
+    setConfirmRestart,
+    stepHeadingRef,
+    errorSummaryRef,
+    goToStep,
+    handleNext,
+    handleBack,
+    confirmAndRestart,
+  } = useWizardController(state, dispatch);
 
   const errorList = Object.values(errors);
 
@@ -90,15 +65,7 @@ export default function WizardPage() {
           ) : (
             <div className="confirm-inline" role="alertdialog" aria-label="Confirm restart">
               <span>Reset all wizard answers?</span>
-              <button
-                type="button"
-                className="btn btn--primary"
-                onClick={() => {
-                  dispatch({ type: 'RESTART' });
-                  setConfirmRestart(false);
-                  setErrors({});
-                }}
-              >
+              <button type="button" className="btn btn--primary" onClick={confirmAndRestart}>
                 Yes, Restart
               </button>
               <button
@@ -120,10 +87,7 @@ export default function WizardPage() {
             type="button"
             className={`stepper-btn ${step === s.id ? 'active' : step > s.id ? 'completed' : ''}`}
             aria-current={step === s.id ? 'step' : undefined}
-            onClick={() => {
-              setErrors({});
-              dispatch({ type: 'SET_STEP', step: s.id });
-            }}
+            onClick={() => goToStep(s.id)}
           >
             {s.label}
           </button>

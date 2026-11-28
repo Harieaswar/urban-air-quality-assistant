@@ -1,12 +1,16 @@
 /**
- * @fileoverview Per-action impact formulas for transport, energy, cooking, diet, waste, and IAQ.
+ * @fileoverview Per-action impact formulas for mobility (metro, carpool, WFH) and household electricity (AC, LED, solar).
  */
 
-import { DEFAULTS } from '../data/constants.js';
-import { getFactorById } from '../utils/resolve.js';
+import { DEFAULTS } from '@/constants';
+import { getFactorById } from '@/utils';
 
-const MONTHS_PER_YEAR = 12;
-
+/**
+ * Compute CO₂e, fuel/fare savings, and formula metadata for switching commute to metro.
+ * @param {Object} ctx - Normalized household context.
+ * @param {Array<Object>} factors - Emission factor entries.
+ * @returns {Object} Impact patch for switch_to_metro.
+ */
 export function impactMetro(ctx, factors) {
   const annualKm = ctx.km * 2 * ctx.days * DEFAULTS.weeksPerYear;
   const fId =
@@ -39,6 +43,12 @@ export function impactMetro(ctx, factors) {
   };
 }
 
+/**
+ * Compute CO₂e and fuel savings for 3-person carpooling.
+ * @param {Object} ctx - Normalized household context.
+ * @param {Array<Object>} factors - Emission factor entries.
+ * @returns {Object} Impact patch for carpool.
+ */
 export function impactCarpool(ctx, factors) {
   const annualKm = ctx.km * 2 * ctx.days * DEFAULTS.weeksPerYear;
   const factor = getFactorById(factors, 'car_petrol');
@@ -60,6 +70,12 @@ export function impactCarpool(ctx, factors) {
   };
 }
 
+/**
+ * Compute CO₂e and fuel savings from working from home during high-smog commute days.
+ * @param {Object} ctx - Normalized household context.
+ * @param {Array<Object>} factors - Emission factor entries.
+ * @returns {Object} Impact patch for wfh_days.
+ */
 export function impactWfh(ctx, factors) {
   const annualKmSaved = ctx.km * 2 * Math.min(2, ctx.days) * DEFAULTS.weeksPerYear;
   const fId =
@@ -69,8 +85,9 @@ export function impactWfh(ctx, factors) {
         ? 'bus_public'
         : 'two_wheeler_petrol';
   const factor = getFactorById(factors, fId);
-  if (!factor || ['wfh', 'walk', 'bicycle'].includes(ctx.commuteMode))
+  if (!factor || ['wfh', 'walk', 'bicycle'].includes(ctx.commuteMode)) {
     return { formula: 'Skipped for zero-commute mode' };
+  }
   const kmPerL = fId.startsWith('car') ? DEFAULTS.carKmPerLitre : DEFAULTS.twoWheelerKmPerLitre;
   return {
     co2SavedKg: {
@@ -90,6 +107,12 @@ export function impactWfh(ctx, factors) {
   };
 }
 
+/**
+ * Compute electricity CO₂e and bill savings from setting AC to 26°C.
+ * @param {Object} ctx - Normalized household context.
+ * @param {Array<Object>} factors - Emission factor entries.
+ * @returns {Object} Impact patch for ac_setpoint_26.
+ */
 export function impactAcSetpoint(ctx, factors) {
   const annualSavingKwh =
     ctx.monthlyKwh *
@@ -116,6 +139,12 @@ export function impactAcSetpoint(ctx, factors) {
   };
 }
 
+/**
+ * Compute annual electricity CO₂e and bill savings from switching CFL/incandescent bulbs to LEDs.
+ * @param {Object} _ctx - Unused household context.
+ * @param {Array<Object>} factors - Emission factor entries.
+ * @returns {Object} Impact patch for led_switch.
+ */
 export function impactLedSwitch(_ctx, factors) {
   const bulbs = DEFAULTS.ledBulbsReplacedDefault;
   const saving = getFactorById(factors, 'led_vs_cfl_saving_per_bulb');
@@ -135,113 +164,12 @@ export function impactLedSwitch(_ctx, factors) {
   };
 }
 
-export function impactInduction(ctx, factors) {
-  const lpgEm = getFactorById(factors, 'lpg_cooking');
-  const lpgUsage = getFactorById(factors, 'lpg_monthly_kg');
-  const grid = getFactorById(factors, 'grid_electricity_india');
-  const base = {
-    exposureChange: 'Eliminates kitchen gas combustion NO2 & cuts cooking PM2.5 by 50–70%',
-    formula: 'Partial LPG combustion avoided − equivalent grid electricity for induction',
-    inputs: { cookingFuel: ctx.cookingFuel },
-    assumptions: [
-      'Thermal efficiency 85% (induction) vs 40% (gas)',
-      'Requires flat ferromagnetic cookware',
-    ],
-  };
-  if (!lpgEm || !lpgUsage || !grid || ctx.cookingFuel === 'induction') return base;
-  const annualLpgKg = lpgUsage.value * MONTHS_PER_YEAR;
-  const inductionKwh =
-    annualLpgKg *
-    DEFAULTS.inductionKwhPerKgLpg *
-    (DEFAULTS.gasThermalEfficiency / DEFAULTS.inductionThermalEfficiency);
-  const netCentral = Math.max(0, Math.round(annualLpgKg * lpgEm.value - inductionKwh * grid.value));
-  const lpgAnnualINR = (annualLpgKg / DEFAULTS.lpgCylinderKg) * DEFAULTS.lpgCylinderPrice;
-  const indAnnualINR = inductionKwh * DEFAULTS.electricityRatePerKwh;
-  return {
-    ...base,
-    co2SavedKg: {
-      low: Math.max(0, Math.round(annualLpgKg * lpgEm.low - inductionKwh * grid.high)),
-      central: netCentral > 0 ? netCentral : 45,
-      high: Math.max(60, Math.round(annualLpgKg * lpgEm.high - inductionKwh * grid.low * 0.7)),
-    },
-    moneySavedINR: Math.max(0, Math.round((lpgAnnualINR - indAnnualINR) * 0.5)),
-    sources: [
-      `${lpgEm.source} (${lpgEm.year})`,
-      `${grid.source} (${grid.year})`,
-      'Kashtan et al. (2023)',
-    ],
-  };
-}
-
-export function impactPressureCooking(ctx, factors) {
-  const lpgEm = getFactorById(factors, 'lpg_cooking');
-  const lpgUsage = getFactorById(factors, 'lpg_monthly_kg');
-  if (!lpgEm || !lpgUsage) return {};
-  const annualKgSaved = lpgUsage.value * MONTHS_PER_YEAR * DEFAULTS.pressureCookerFuelSavingRatio;
-  return {
-    co2SavedKg: {
-      low: Math.round(annualKgSaved * lpgEm.low * 0.7),
-      central: Math.round(annualKgSaved * lpgEm.value),
-      high: Math.round(annualKgSaved * lpgEm.high * 1.3),
-    },
-    moneySavedINR: Math.round((annualKgSaved / DEFAULTS.lpgCylinderKg) * DEFAULTS.lpgCylinderPrice),
-    exposureChange: 'Halves stove-on time for staples, lowering kitchen PM2.5 & NO2 build-up',
-    formula: '20% household cooking fuel reduction × fuel factor',
-    inputs: { cookingFuel: ctx.cookingFuel },
-    sources: [`${lpgEm.source}`, 'Pohekar & Ramachandran (2006)'],
-    assumptions: [
-      'Used for dals, rice, and stews (~40% of cooking load, saving 50% fuel on those dishes)',
-    ],
-  };
-}
-
-export function impactDietShift(ctx, factors) {
-  const currentF = getFactorById(factors, `diet_${ctx.diet}`);
-  const vegF = getFactorById(factors, 'diet_vegetarian');
-  if (!currentF || !vegF || ctx.diet === 'vegetarian' || ctx.diet === 'vegan') return {};
-  return {
-    co2SavedKg: {
-      low: Math.max(
-        0,
-        Math.round((currentF.low - vegF.high) * DEFAULTS.plantForwardMealShiftRatio * ctx.members)
-      ),
-      central: Math.max(
-        0,
-        Math.round(
-          (currentF.value - vegF.value) * DEFAULTS.plantForwardMealShiftRatio * ctx.members
-        )
-      ),
-      high: Math.max(
-        0,
-        Math.round((currentF.high - vegF.low) * DEFAULTS.plantForwardMealShiftRatio * ctx.members)
-      ),
-    },
-    moneySavedINR: Math.round(DEFAULTS.plantForwardAnnualSavingsPerMemberINR * ctx.members),
-    formula: '(Current diet factor − vegetarian factor) × 30% meal shift × household size',
-    inputs: { diet: ctx.diet, members: ctx.members },
-    sources: [`${currentF.source} (${currentF.year})`],
-    assumptions: ['Shifting 2–3 meat-heavy meals/week to plant-based meals'],
-  };
-}
-
-export function impactWasteChange(ctx, factors, targetId, annualSavings = 0) {
-  const curr = getFactorById(factors, `waste_${ctx.wasteHabits}`);
-  const target = getFactorById(factors, targetId);
-  if (!curr || !target) return {};
-  return {
-    co2SavedKg: {
-      low: Math.max(0, curr.low - target.high),
-      central: Math.max(0, curr.value - target.value),
-      high: Math.max(0, curr.high - target.low),
-    },
-    moneySavedINR: annualSavings,
-    formula: 'Current waste factor − improved waste factor',
-    inputs: { wasteHabits: ctx.wasteHabits },
-    sources: [`${curr.source} (${curr.year})`],
-    assumptions: ['Assumes consistent household wet/dry waste separation'],
-  };
-}
-
+/**
+ * Compute CO₂e and bill savings from replacing an electric geyser with a solar water heater.
+ * @param {Object} _ctx - Unused household context.
+ * @param {Array<Object>} factors - Emission factor entries.
+ * @returns {Object} Impact patch for solar_water_heater.
+ */
 export function impactSolarWaterHeater(_ctx, factors) {
   const grid = getFactorById(factors, 'grid_electricity_india');
   const geyser = getFactorById(factors, 'geyser');
