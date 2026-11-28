@@ -1,3 +1,7 @@
+/**
+ * @fileoverview React 18 application bootstrap mounting BrowserRouter and global stylesheets.
+ */
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';

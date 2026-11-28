@@ -1,6 +1,14 @@
+/**
+ * @fileoverview Reusable styled button primitive supporting primary, secondary, and ghost variants.
+ */
+
 import React from 'react';
 
-/** Reusable button with variants */
+/**
+ * Render an accessible styled button element.
+ * @param {Object} props - Button label, visual variant, icon, type, disabled state, and click handler.
+ * @returns {JSX.Element} Styled button element.
+ */
 export default function Button({
   children,
   variant = 'primary',
