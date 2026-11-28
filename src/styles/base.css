@@ -95,7 +95,8 @@ a:hover {
   padding: var(--space-lg);
 }
 
-.glass-card-flat {
+.glass-card-flat,
+.impact-card {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);

@@ -2,7 +2,7 @@
  * @fileoverview Context normalization and per-action formula dispatch registry.
  */
 
-import { DEFAULTS, CONSERVATIVE_UNKNOWNS } from '../constants/index.js';
+import { DEFAULTS, CONSERVATIVE_UNKNOWNS, IMPACT_FACTORS } from '../constants/index.js';
 import { resolveWithFallback } from '../utils/resolve.js';
 import {
   impactMetro,
@@ -33,16 +33,15 @@ const ACTION_DISPATCH = {
       ? impactWasteChange(ctx, factors, 'waste_basic_segregation', 0)
       : { formula: 'Already segregating waste' },
   home_composting: (ctx, factors) =>
-    impactWasteChange(
-      ctx,
-      factors,
-      'waste_composting',
-      DEFAULTS.compostingAnnualSavingsINR
-    ),
+    impactWasteChange(ctx, factors, 'waste_composting', DEFAULTS.compostingAnnualSavingsINR),
   solar_water_heater: impactSolarWaterHeater,
 };
 
-const DEFAULT_NON_IAQ_SAVINGS = { low: 10, central: 25, high: 45 };
+const DEFAULT_NON_IAQ_SAVINGS = {
+  low: IMPACT_FACTORS.DEFAULT_ACTION_CO2_LOW,
+  central: IMPACT_FACTORS.DEFAULT_ACTION_CO2_CENTRAL,
+  high: IMPACT_FACTORS.DEFAULT_ACTION_CO2_HIGH,
+};
 const ZERO_CO2 = { low: 0, central: 0, high: 0 };
 
 function defaultActionPatch(action) {
@@ -79,12 +78,18 @@ function defaultActionPatch(action) {
  */
 export function buildActionContext(profile) {
   return {
-    km: Number(resolveWithFallback(profile.commuteKm, CONSERVATIVE_UNKNOWNS.commuteKm)) || 10,
-    days: Number(resolveWithFallback(profile.commuteDays, CONSERVATIVE_UNKNOWNS.commuteDays)) || 5,
+    km:
+      Number(resolveWithFallback(profile.commuteKm, CONSERVATIVE_UNKNOWNS.commuteKm)) ||
+      IMPACT_FACTORS.DEFAULT_FALLBACK_KM,
+    days:
+      Number(resolveWithFallback(profile.commuteDays, CONSERVATIVE_UNKNOWNS.commuteDays)) ||
+      IMPACT_FACTORS.DEFAULT_FALLBACK_DAYS,
     monthlyKwh:
-      Number(resolveWithFallback(profile.monthlyKwh, CONSERVATIVE_UNKNOWNS.monthlyKwh)) || 200,
+      Number(resolveWithFallback(profile.monthlyKwh, CONSERVATIVE_UNKNOWNS.monthlyKwh)) ||
+      IMPACT_FACTORS.DEFAULT_FALLBACK_KWH,
     members:
-      Number(resolveWithFallback(profile.householdSize, CONSERVATIVE_UNKNOWNS.householdSize)) || 3,
+      Number(resolveWithFallback(profile.householdSize, CONSERVATIVE_UNKNOWNS.householdSize)) ||
+      IMPACT_FACTORS.DEFAULT_FALLBACK_MEMBERS,
     commuteMode: resolveWithFallback(profile.commuteMode, CONSERVATIVE_UNKNOWNS.commuteMode),
     cookingFuel: resolveWithFallback(profile.cookingFuel, CONSERVATIVE_UNKNOWNS.cookingFuel),
     diet: resolveWithFallback(profile.diet, CONSERVATIVE_UNKNOWNS.diet),

@@ -2,17 +2,11 @@
  * @fileoverview Reducer and localStorage persistence helpers for SmogGuard single-source store.
  */
 
-import {
-  STORAGE_KEY,
-  createDefaultRoom,
-  createInitialState,
-  selectCalculatorProfile,
-} from './initialState.js';
+import { BOUNDS } from '../constants/index.js';
+import { STORAGE_KEY, createDefaultRoom, createInitialState } from './initialState.js';
 
-export { STORAGE_KEY, createDefaultRoom, createInitialState, selectCalculatorProfile };
-
-const MIN_STEP = 1;
-const MAX_STEP = 4;
+const MIN_STEP = BOUNDS.MIN_STEPS;
+const MAX_STEP = BOUNDS.MAX_STEPS;
 
 function toggleSensitiveGroup(currentList, id) {
   const current = Array.isArray(currentList) ? currentList : [];
@@ -139,6 +133,25 @@ export function appReducer(state, action) {
   return handler ? handler(state, action, Date.now()) : state;
 }
 
+function mergePersistedSections(parsed) {
+  const base = createInitialState();
+  const parsedRooms = parsed.rooms || {};
+  const list =
+    Array.isArray(parsedRooms.list) && parsedRooms.list.length > 0
+      ? parsedRooms.list
+      : base.rooms.list;
+  return {
+    ...base,
+    ...parsed,
+    location: { ...base.location, ...(parsed.location || {}) },
+    family: { ...base.family, ...(parsed.family || {}) },
+    rooms: { ...base.rooms, ...parsedRooms, list },
+    routine: { ...base.routine, ...(parsed.routine || {}) },
+    air: { ...base.air, ...(parsed.air || {}), loading: false },
+    preferences: { ...base.preferences, ...(parsed.preferences || {}) },
+  };
+}
+
 /**
  * Load persisted SmogGuard state from localStorage, falling back cleanly if corrupted.
  * @returns {Object} Restored or fresh initial state.
@@ -149,24 +162,7 @@ export function loadPersistedState() {
     if (!raw) return createInitialState();
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return createInitialState();
-    const base = createInitialState();
-    return {
-      ...base,
-      ...parsed,
-      location: { ...base.location, ...(parsed.location || {}) },
-      family: { ...base.family, ...(parsed.family || {}) },
-      rooms: {
-        ...base.rooms,
-        ...(parsed.rooms || {}),
-        list:
-          Array.isArray(parsed.rooms?.list) && parsed.rooms.list.length > 0
-            ? parsed.rooms.list
-            : base.rooms.list,
-      },
-      routine: { ...base.routine, ...(parsed.routine || {}) },
-      air: { ...base.air, ...(parsed.air || {}), loading: false },
-      preferences: { ...base.preferences, ...(parsed.preferences || {}) },
-    };
+    return mergePersistedSections(parsed);
   } catch (err) {
     console.warn('Corrupted saved profile found in localStorage; resetting to defaults:', err);
     return createInitialState();

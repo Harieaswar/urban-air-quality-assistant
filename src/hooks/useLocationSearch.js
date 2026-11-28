@@ -6,13 +6,14 @@ import { useState, useEffect, useRef } from 'react';
 import { API_CONFIG } from '@/constants';
 import { searchPlaces } from '@/services';
 
-const INITIAL_STATUS = 'idle';
-
-function applySearchResult({ res, setResults, setStatus, setStatusMsg, setActiveIndex, setShowManual }) {
+function applySearchResult(res, setters) {
+  const { setResults, setStatus, setStatusMsg, setActiveIndex, setShowManual } = setters;
   if (res.status === 'ok') {
     setResults(res.results);
     setStatus('ok');
-    setStatusMsg(`${res.results.length} matching place${res.results.length === 1 ? '' : 's'} available.`);
+    setStatusMsg(
+      `${res.results.length} matching place${res.results.length === 1 ? '' : 's'} available.`
+    );
     setActiveIndex(-1);
   } else if (res.status === 'empty') {
     setResults([]);
@@ -26,123 +27,137 @@ function applySearchResult({ res, setResults, setStatus, setStatusMsg, setActive
   }
 }
 
-/**
- * Manage accessible autocomplete query, 300ms debounce, AbortController requests, and keyboard nav.
- * @param {{ initialName: string, onSelectLocation: function(Object): void }} params - Hook config.
- * @returns {Object} Combobox state and event handlers.
- */
-export function useLocationSearch({ initialName, onSelectLocation }) {
-  const [query, setQuery] = useState(initialName || '');
-  const [results, setResults] = useState([]);
-  const [status, setStatus] = useState(INITIAL_STATUS);
-  const [statusMsg, setStatusMsg] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const [showManual, setShowManual] = useState(false);
-
+function useDebouncedPlaceFetch({ query, skipNextFetchRef, setters }) {
   const abortRef = useRef(null);
-  const skipNextFetchRef = useRef(false);
-
-  useEffect(() => {
-    setQuery(initialName || '');
-  }, [initialName]);
 
   useEffect(() => {
     if (skipNextFetchRef.current) {
       skipNextFetchRef.current = false;
       return undefined;
     }
-
     const trimmed = query.trim();
     if (trimmed.length < API_CONFIG.GEOCODING_MIN_CHARS) {
       if (abortRef.current) abortRef.current.abort();
-      setResults([]);
-      setStatus(INITIAL_STATUS);
-      setStatusMsg('');
-      setIsOpen(false);
+      setters.setResults([]);
+      setters.setStatus('idle');
+      setters.setStatusMsg('');
+      setters.setIsOpen(false);
       return undefined;
     }
-
     const timer = setTimeout(async () => {
       if (abortRef.current) abortRef.current.abort();
       const controller = new AbortController();
       abortRef.current = controller;
-
-      setStatus('loading');
-      setStatusMsg('Searching locations...');
-      setIsOpen(true);
-
+      setters.setStatus('loading');
+      setters.setStatusMsg('Searching locations...');
+      setters.setIsOpen(true);
       try {
         const res = await searchPlaces(trimmed, { signal: controller.signal });
-        if (!controller.signal.aborted) {
-          applySearchResult({ res, setResults, setStatus, setStatusMsg, setActiveIndex, setShowManual });
-        }
+        if (!controller.signal.aborted) applySearchResult(res, setters);
       } catch (err) {
         if (err?.name !== 'AbortError') {
-          setStatus('unavailable');
-          setStatusMsg('Search unavailable, enter coordinates manually');
-          setShowManual(true);
+          setters.setStatus('unavailable');
+          setters.setStatusMsg('Search unavailable, enter coordinates manually');
+          setters.setShowManual(true);
         }
       }
     }, API_CONFIG.GEOCODING_DEBOUNCE_MS);
-
     return () => {
       clearTimeout(timer);
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [query]);
+  }, [query, skipNextFetchRef, setters]);
+}
 
+function nextIndexForKey(key, prev, total) {
+  if (total === 0) return -1;
+  return key === 'ArrowDown' ? (prev + 1) % total : (prev - 1 + total) % total;
+}
+
+function processComboboxKey(event, ctx) {
+  const isArrow = event.key === 'ArrowDown' || event.key === 'ArrowUp';
+  if (isArrow) {
+    event.preventDefault();
+    if (!ctx.isOpen && ctx.results.length > 0) {
+      ctx.setIsOpen(true);
+      ctx.setActiveIndex(0);
+    } else {
+      ctx.setActiveIndex((prev) => nextIndexForKey(event.key, prev, ctx.results.length));
+    }
+    return;
+  }
+  if (event.key === 'Enter' && ctx.isOpen && ctx.results[ctx.activeIndex]) {
+    event.preventDefault();
+    ctx.selectPlace(ctx.results[ctx.activeIndex]);
+  } else if (event.key === 'Escape') {
+    ctx.setIsOpen(false);
+    ctx.setActiveIndex(-1);
+  }
+}
+
+function useComboboxHandlers({ skipNextFetchRef, setters, onSelectLocation, stateSnapshot }) {
   const selectPlace = (place) => {
     skipNextFetchRef.current = true;
-    setQuery(place.displayName);
-    setIsOpen(false);
-    setActiveIndex(-1);
-    setStatusMsg(`Selected ${place.displayName}`);
+    setters.setQuery(place.displayName);
+    setters.setIsOpen(false);
+    setters.setActiveIndex(-1);
+    setters.setStatusMsg(`Selected ${place.displayName}`);
     onSelectLocation({ name: place.displayName, lat: place.lat, lon: place.lon });
   };
-
   const applyManualCoords = (loc) => {
     skipNextFetchRef.current = true;
-    setQuery(loc.name);
-    setIsOpen(false);
+    setters.setQuery(loc.name);
+    setters.setIsOpen(false);
     onSelectLocation(loc);
   };
+  const handleKeyDown = (event) =>
+    processComboboxKey(event, { ...stateSnapshot, ...setters, selectPlace });
+  return { selectPlace, applyManualCoords, handleKeyDown };
+}
 
-  const handleKeyDown = (event) => {
-    if (!isOpen && (event.key === 'ArrowDown' || event.key === 'ArrowUp') && results.length > 0) {
-      setIsOpen(true);
-      setActiveIndex(0);
-      event.preventDefault();
-      return;
-    }
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      setActiveIndex((prev) => (results.length === 0 ? -1 : (prev + 1) % results.length));
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      setActiveIndex((prev) => (results.length === 0 ? -1 : (prev - 1 + results.length) % results.length));
-    } else if (event.key === 'Enter' && isOpen && activeIndex >= 0 && results[activeIndex]) {
-      event.preventDefault();
-      selectPlace(results[activeIndex]);
-    } else if (event.key === 'Escape') {
-      setIsOpen(false);
-      setActiveIndex(-1);
-    }
-  };
-
+function useComboboxState(initialName) {
+  const [query, setQuery] = useState(initialName || '');
+  const [results, setResults] = useState([]);
+  const [status, setStatus] = useState('idle');
+  const [statusMsg, setStatusMsg] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [showManual, setShowManual] = useState(false);
+  useEffect(() => setQuery(initialName || ''), [initialName]);
   return {
-    query,
-    setQuery,
-    results,
-    status,
-    statusMsg,
-    isOpen,
-    setIsOpen,
-    activeIndex,
-    showManual,
-    setShowManual,
-    selectPlace,
-    applyManualCoords,
-    handleKeyDown,
+    values: { query, results, status, statusMsg, isOpen, activeIndex, showManual },
+    setters: {
+      setQuery,
+      setResults,
+      setStatus,
+      setStatusMsg,
+      setIsOpen,
+      setActiveIndex,
+      setShowManual,
+    },
+  };
+}
+
+/**
+ * Manage accessible autocomplete query, 300ms debounce, AbortController requests, and keyboard nav.
+ * @param {{ initialName: string, onSelectLocation: function(Object): void }} params - Hook config.
+ * @returns {Object} Combobox state and event handlers.
+ */
+export function useLocationSearch({ initialName, onSelectLocation }) {
+  const { values, setters } = useComboboxState(initialName);
+  const skipNextFetchRef = useRef(false);
+  useDebouncedPlaceFetch({ query: values.query, skipNextFetchRef, setters });
+  const handlers = useComboboxHandlers({
+    skipNextFetchRef,
+    setters,
+    onSelectLocation,
+    stateSnapshot: values,
+  });
+  return {
+    ...values,
+    setQuery: setters.setQuery,
+    setIsOpen: setters.setIsOpen,
+    setShowManual: setters.setShowManual,
+    ...handlers,
   };
 }

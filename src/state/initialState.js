@@ -6,6 +6,15 @@ import { buildSampleSevereSmogData } from '../services/openMeteo.js';
 
 export const STORAGE_KEY = 'smogguard_state_v2';
 
+const SAMPLE_LAT = 28.6;
+const SAMPLE_LON = 77.2;
+const DEFAULT_ROOM_AREA_SQM = 16;
+const DEFAULT_CEILING_M = 2.8;
+const DEFAULT_HOUSEHOLD_SIZE = 4;
+const DEFAULT_COMMUTE_KM = 12;
+const DEFAULT_COMMUTE_DAYS = 5;
+const DEFAULT_MONTHLY_KWH = 220;
+
 /**
  * Create a default room configuration object.
  * @param {number} [index=1] - 1-based room index.
@@ -17,12 +26,68 @@ export function createDefaultRoom(index = 1) {
     name: index === 1 ? 'Primary Bedroom' : `Room ${index}`,
     type: index === 1 ? 'bedroom' : 'living_room',
     typeOther: '',
-    areaSqM: 16,
+    areaSqM: DEFAULT_ROOM_AREA_SQM,
     areaUnit: 'sqm',
-    ceilingHeightM: 2.8,
+    ceilingHeightM: DEFAULT_CEILING_M,
     ventilation: 'moderate',
     ventilationOther: '',
     hasSensitiveOccupant: index === 1,
+  };
+}
+
+function createLocationDefaults() {
+  return {
+    name: 'New Delhi (Sample Severe-Smog Demo)',
+    lat: SAMPLE_LAT,
+    lon: SAMPLE_LON,
+    homeType: 'apartment',
+    homeTypeOther: '',
+    cooling: 'ac',
+    coolingOther: '',
+    rentalLimits: true,
+    rentalLimitsOther: '',
+  };
+}
+
+function createFamilyDefaults() {
+  return {
+    householdSize: DEFAULT_HOUSEHOLD_SIZE,
+    sensitiveGroups: ['children'],
+    sensitiveGroupsOther: '',
+    goals: ['cleaner_air', 'cut_emissions'],
+    goalsOther: '',
+    budget: 'medium',
+    budgetOther: '',
+    effort: 'medium',
+    effortOther: '',
+  };
+}
+
+function createRoomsDefaults() {
+  return {
+    list: [createDefaultRoom(1)],
+    cookingFuel: 'lpg',
+    cookingFuelOther: '',
+    hasChimney: 'exhaust_fan',
+    hasChimneyOther: '',
+    indoorSmokeSources: ['none'],
+    indoorSmokeSourcesOther: '',
+  };
+}
+
+function createRoutineDefaults() {
+  return {
+    commuteMode: 'two_wheeler',
+    commuteModeOther: '',
+    commuteKm: DEFAULT_COMMUTE_KM,
+    commuteDays: DEFAULT_COMMUTE_DAYS,
+    monthlyKwh: DEFAULT_MONTHLY_KWH,
+    diet: 'vegetarian',
+    dietOther: '',
+    wasteHabits: 'basic_segregation',
+    wasteHabitsOther: '',
+    outdoorExerciseTiming: 'morning',
+    outdoorExerciseTimingOther: '',
   };
 }
 
@@ -35,50 +100,10 @@ export function createInitialState() {
     version: '2.0.0',
     wizardStep: 1,
     wizardCompleted: false,
-    location: {
-      name: 'New Delhi (Sample Severe-Smog Demo)',
-      lat: 28.6,
-      lon: 77.2,
-      homeType: 'apartment',
-      homeTypeOther: '',
-      cooling: 'ac',
-      coolingOther: '',
-      rentalLimits: true,
-      rentalLimitsOther: '',
-    },
-    family: {
-      householdSize: 4,
-      sensitiveGroups: ['children'],
-      sensitiveGroupsOther: '',
-      goals: ['cleaner_air', 'cut_emissions'],
-      goalsOther: '',
-      budget: 'medium',
-      budgetOther: '',
-      effort: 'medium',
-      effortOther: '',
-    },
-    rooms: {
-      list: [createDefaultRoom(1)],
-      cookingFuel: 'lpg',
-      cookingFuelOther: '',
-      hasChimney: 'exhaust_fan',
-      hasChimneyOther: '',
-      indoorSmokeSources: ['none'],
-      indoorSmokeSourcesOther: '',
-    },
-    routine: {
-      commuteMode: 'two_wheeler',
-      commuteModeOther: '',
-      commuteKm: 12,
-      commuteDays: 5,
-      monthlyKwh: 220,
-      diet: 'vegetarian',
-      dietOther: '',
-      wasteHabits: 'basic_segregation',
-      wasteHabitsOther: '',
-      outdoorExerciseTiming: 'morning',
-      outdoorExerciseTimingOther: '',
-    },
+    location: createLocationDefaults(),
+    family: createFamilyDefaults(),
+    rooms: createRoomsDefaults(),
+    routine: createRoutineDefaults(),
     air: {
       data: buildSampleSevereSmogData(),
       loading: false,

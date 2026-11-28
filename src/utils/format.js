@@ -2,9 +2,7 @@
  * @fileoverview Display formatting utilities for CO₂e, Indian Rupees, ranges, hours, and timestamps.
  */
 
-const KG_PER_TONNE = 1000;
-const HOURS_PER_DAY = 24;
-const NOON_HOUR = 12;
+import { BOUNDS, TIME_UNITS } from '@/constants';
 
 /**
  * Format kg CO₂e with appropriate unit (kg or tonnes).
@@ -13,9 +11,11 @@ const NOON_HOUR = 12;
  */
 export function formatCO2(kg) {
   if (kg === null || kg === undefined || isNaN(kg)) return '0 kg CO₂e';
-  if (kg >= KG_PER_TONNE) return `${(kg / KG_PER_TONNE).toFixed(1)} tonnes CO₂e`;
+  if (kg >= BOUNDS.KG_PER_TONNE) return `${(kg / BOUNDS.KG_PER_TONNE).toFixed(1)} tonnes CO₂e`;
   return `${Math.round(kg)} kg CO₂e`;
 }
+
+const INR_REST_GROUP_SLICE = -2;
 
 /**
  * Format an INR amount using the Indian numbering system (lakhs/thousands).
@@ -26,15 +26,16 @@ export function formatINR(amount) {
   if (amount === null || amount === undefined || isNaN(amount)) return '₹0';
   const num = Math.round(amount);
   const str = Math.abs(num).toString();
+  const groupLen = BOUNDS.INR_FIRST_GROUP_DIGITS;
   let result = '';
-  if (str.length <= 3) {
+  if (str.length <= groupLen) {
     result = str;
   } else {
-    result = str.slice(-3);
-    let remaining = str.slice(0, -3);
+    result = str.slice(-groupLen);
+    let remaining = str.slice(0, -groupLen);
     while (remaining.length > 2) {
-      result = `${remaining.slice(-2)},${result}`;
-      remaining = remaining.slice(0, -2);
+      result = `${remaining.slice(INR_REST_GROUP_SLICE)},${result}`;
+      remaining = remaining.slice(0, INR_REST_GROUP_SLICE);
     }
     if (remaining.length > 0) result = `${remaining},${result}`;
   }
@@ -59,6 +60,7 @@ export function formatRange(low, central, high) {
  * @returns {string} Formatted hour string.
  */
 export function formatHour(hour) {
+  const { HOURS_PER_DAY, NOON_HOUR } = TIME_UNITS;
   const h = ((Number(hour) % HOURS_PER_DAY) + HOURS_PER_DAY) % HOURS_PER_DAY;
   if (h === 0) return '12 AM';
   if (h === NOON_HOUR) return '12 PM';

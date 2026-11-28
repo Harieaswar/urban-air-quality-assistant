@@ -2,10 +2,7 @@
  * @fileoverview Plain-language input validation helpers for wizard fields and coordinates.
  */
 
-const MIN_LAT = -90;
-const MAX_LAT = 90;
-const MIN_LON = -180;
-const MAX_LON = 180;
+import { BOUNDS } from '@/constants';
 
 /**
  * Validate a non-negative number up to an upper bound.
@@ -62,11 +59,16 @@ export function validateRange(value, min, max, fieldName) {
  * @returns {{ valid: boolean, lat?: number, lon?: number, error: string|null }} Validation outcome.
  */
 export function validateCoordinates(lat, lon) {
-  const latRes = validateRange(lat, MIN_LAT, MAX_LAT, 'Latitude');
+  const latRes = validateRange(lat, BOUNDS.MIN_LAT, BOUNDS.MAX_LAT, 'Latitude');
   if (!latRes.valid) return latRes;
-  const lonRes = validateRange(lon, MIN_LON, MAX_LON, 'Longitude');
+  const lonRes = validateRange(lon, BOUNDS.MIN_LON, BOUNDS.MAX_LON, 'Longitude');
   if (!lonRes.valid) return lonRes;
   return { valid: true, lat: latRes.value, lon: lonRes.value, error: null };
+}
+
+function isEmptySelection(value) {
+  if (value === null || value === undefined || value === '') return true;
+  return Array.isArray(value) && value.length === 0;
 }
 
 /**
@@ -80,12 +82,7 @@ export function validateChoiceWithOther(value, otherText, fieldLabel) {
   if (value === 'unknown') {
     return { valid: true, error: null };
   }
-  if (
-    value === null ||
-    value === undefined ||
-    value === '' ||
-    (Array.isArray(value) && value.length === 0)
-  ) {
+  if (isEmptySelection(value)) {
     return {
       valid: false,
       error: `Please choose an option for ${fieldLabel} (or select "Not sure").`,

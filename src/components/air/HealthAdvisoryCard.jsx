@@ -1,12 +1,42 @@
+/**
+ * @fileoverview MoHFW/NCDC Health Advisory Card with interactive family-tailoring chips.
+ */
+
 import React from 'react';
 import GlassCard from '@/components/ui/GlassCard';
+import TailoredNotesList from '@/components/air/TailoredNotesList';
 import { getHealthAdvisory } from '@/calculators/advisory';
 import { FAMILY_PROFILES } from '@/constants';
 
+function FamilyTailoringChips({ cleanIds, onToggleFamilyMember }) {
+  return (
+    <div className="tailor-section">
+      <p className="field-label">Tailor for family member</p>
+      <div className="chip-group" role="group" aria-label="Tailor for family member">
+        {FAMILY_PROFILES.map((fp) => {
+          const active = cleanIds.includes(fp.id);
+          return (
+            <button
+              key={fp.id}
+              type="button"
+              className={`choice-chip ${active ? 'selected' : ''}`}
+              aria-pressed={active}
+              onClick={() => onToggleFamilyMember(fp.id)}
+            >
+              <span aria-hidden="true">{fp.icon}</span>
+              <span>{fp.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /**
- * Health Advisory Card — SmogGuard
- * Uses MoHFW/NCDC category guidance from advisories.json.
- * Includes interactive "Tailor for family member" chips and "not medical advice" note.
+ * Render MoHFW/NCDC air quality health guidance and sensitive-group tailoring chips.
+ * @param {Object} props - PM2.5 reading, AQI scale, selected family profiles, and chip toggle handler.
+ * @returns {JSX.Element} Health advisory card.
  */
 export default function HealthAdvisoryCard({
   pm25,
@@ -29,47 +59,11 @@ export default function HealthAdvisoryCard({
           </h3>
         </div>
       </div>
-
       <p className="advisory-general">{advisory.generalAdvice}</p>
-
       {showChips && onToggleFamilyMember && (
-        <div className="tailor-section">
-          <p className="field-label">Tailor for family member</p>
-          <div className="chip-group" role="group" aria-label="Tailor for family member">
-            {FAMILY_PROFILES.map((fp) => {
-              const active = cleanIds.includes(fp.id);
-              return (
-                <button
-                  key={fp.id}
-                  type="button"
-                  className={`choice-chip ${active ? 'selected' : ''}`}
-                  aria-pressed={active}
-                  onClick={() => onToggleFamilyMember(fp.id)}
-                >
-                  <span aria-hidden="true">{fp.icon}</span>
-                  <span>{fp.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <FamilyTailoringChips cleanIds={cleanIds} onToggleFamilyMember={onToggleFamilyMember} />
       )}
-
-      {advisory.tailoredNotes.length > 0 && (
-        <div className="tailored-list">
-          {advisory.tailoredNotes.map((note) => (
-            <div key={note.id} className="tailored-item">
-              <div className="tailored-item-title">
-                <span aria-hidden="true">{note.icon}</span>
-                <strong>{note.label}</strong>
-              </div>
-              <p>{note.advice}</p>
-              <p className="tailored-rationale">{note.rationale}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
+      <TailoredNotesList notes={advisory.tailoredNotes} />
       <p className="medical-disclaimer" role="note">
         ⚠️ {advisory.disclaimer}
       </p>

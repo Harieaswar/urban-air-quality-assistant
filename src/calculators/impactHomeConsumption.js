@@ -2,8 +2,36 @@
  * @fileoverview Per-action impact formulas for kitchen fuel, pressure cooking, diet shifts, and household waste.
  */
 
-import { DEFAULTS, TIME_UNITS } from '@/constants';
+import { DEFAULTS, IMPACT_FACTORS, TIME_UNITS } from '@/constants';
 import { getFactorById } from '@/utils';
+
+function computeInductionDelta(lpgEm, lpgUsage, grid) {
+  const annualLpgKg = lpgUsage.value * TIME_UNITS.MONTHS_PER_YEAR;
+  const inductionKwh =
+    annualLpgKg *
+    DEFAULTS.inductionKwhPerKgLpg *
+    (DEFAULTS.gasThermalEfficiency / DEFAULTS.inductionThermalEfficiency);
+  const netCentral = Math.max(0, Math.round(annualLpgKg * lpgEm.value - inductionKwh * grid.value));
+  const lpgAnnualINR = (annualLpgKg / DEFAULTS.lpgCylinderKg) * DEFAULTS.lpgCylinderPrice;
+  const indAnnualINR = inductionKwh * DEFAULTS.electricityRatePerKwh;
+  return {
+    co2SavedKg: {
+      low: Math.max(0, Math.round(annualLpgKg * lpgEm.low - inductionKwh * grid.high)),
+      central: netCentral > 0 ? netCentral : IMPACT_FACTORS.INDUCTION_NET_CO2_FLOOR_KG,
+      high: Math.max(
+        IMPACT_FACTORS.INDUCTION_HIGH_CO2_FLOOR_KG,
+        Math.round(
+          annualLpgKg * lpgEm.high -
+            inductionKwh * grid.low * IMPACT_FACTORS.INDUCTION_GRID_LOW_SENSITIVITY
+        )
+      ),
+    },
+    moneySavedINR: Math.max(
+      0,
+      Math.round((lpgAnnualINR - indAnnualINR) * IMPACT_FACTORS.INDUCTION_COST_SPLIT_FACTOR)
+    ),
+  };
+}
 
 /**
  * Compute net CO₂e, kitchen air quality gain, and cost difference for switching cooking to induction.
@@ -25,22 +53,9 @@ export function impactInduction(ctx, factors) {
     ],
   };
   if (!lpgEm || !lpgUsage || !grid || ctx.cookingFuel === 'induction') return base;
-  const annualLpgKg = lpgUsage.value * TIME_UNITS.MONTHS_PER_YEAR;
-  const inductionKwh =
-    annualLpgKg *
-    DEFAULTS.inductionKwhPerKgLpg *
-    (DEFAULTS.gasThermalEfficiency / DEFAULTS.inductionThermalEfficiency);
-  const netCentral = Math.max(0, Math.round(annualLpgKg * lpgEm.value - inductionKwh * grid.value));
-  const lpgAnnualINR = (annualLpgKg / DEFAULTS.lpgCylinderKg) * DEFAULTS.lpgCylinderPrice;
-  const indAnnualINR = inductionKwh * DEFAULTS.electricityRatePerKwh;
   return {
     ...base,
-    co2SavedKg: {
-      low: Math.max(0, Math.round(annualLpgKg * lpgEm.low - inductionKwh * grid.high)),
-      central: netCentral > 0 ? netCentral : 45,
-      high: Math.max(60, Math.round(annualLpgKg * lpgEm.high - inductionKwh * grid.low * 0.7)),
-    },
-    moneySavedINR: Math.max(0, Math.round((lpgAnnualINR - indAnnualINR) * 0.5)),
+    ...computeInductionDelta(lpgEm, lpgUsage, grid),
     sources: [
       `${lpgEm.source} (${lpgEm.year})`,
       `${grid.source} (${grid.year})`,
@@ -63,9 +78,9 @@ export function impactPressureCooking(ctx, factors) {
     lpgUsage.value * TIME_UNITS.MONTHS_PER_YEAR * DEFAULTS.pressureCookerFuelSavingRatio;
   return {
     co2SavedKg: {
-      low: Math.round(annualKgSaved * lpgEm.low * 0.7),
+      low: Math.round(annualKgSaved * lpgEm.low * IMPACT_FACTORS.PRESSURE_LOW_MULTIPLIER),
       central: Math.round(annualKgSaved * lpgEm.value),
-      high: Math.round(annualKgSaved * lpgEm.high * 1.3),
+      high: Math.round(annualKgSaved * lpgEm.high * IMPACT_FACTORS.PRESSURE_HIGH_MULTIPLIER),
     },
     moneySavedINR: Math.round((annualKgSaved / DEFAULTS.lpgCylinderKg) * DEFAULTS.lpgCylinderPrice),
     exposureChange: 'Halves stove-on time for staples, lowering kitchen PM2.5 & NO2 build-up',

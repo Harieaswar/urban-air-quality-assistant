@@ -27,7 +27,7 @@ export function roundCoordinate(value) {
  * @param {number} lon - Longitude.
  * @returns {string} Storage key.
  */
-export function getCacheKey(lat, lon) {
+function getCacheKey(lat, lon) {
   return `${CACHE_KEY_PREFIX}${roundCoordinate(lat).toFixed(1)}_${roundCoordinate(lon).toFixed(1)}`;
 }
 

@@ -1,9 +1,16 @@
 /**
- * @fileoverview Shared resolution and factor lookup helpers for pure calculators.
+ * @fileoverview Shared resolution, rounding, and factor lookup helpers for pure calculators.
  */
 
-export function isPresent(value) {
-  return value !== null && value !== undefined;
+const TENTHS_FACTOR = 10;
+
+/**
+ * Round a numeric value to one decimal place (tenths).
+ * @param {number} value - Value to round.
+ * @returns {number} Value rounded to 0.1 precision.
+ */
+export function roundToTenths(value) {
+  return Math.round(value * TENTHS_FACTOR) / TENTHS_FACTOR;
 }
 
 /**

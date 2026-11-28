@@ -5,7 +5,6 @@
 import { API_CONFIG } from '../constants/index.js';
 import {
   CACHE_KEY_PREFIX,
-  CACHE_TTL_MS,
   roundCoordinate,
   readCachedAirData,
   writeCachedAirData,
@@ -17,7 +16,6 @@ import { OPEN_METEO_HOSTS, fetchWithTimeout, searchPlaces } from './geocodingCli
 
 export {
   CACHE_KEY_PREFIX,
-  CACHE_TTL_MS,
   searchPlaces,
   roundCoordinate,
   readCachedAirData,
@@ -35,7 +33,9 @@ function normalizeHourlyResponse(aqRes) {
   const scale = API_CONFIG.COORD_ROUND_SCALE;
   return pm25Arr.slice(0, API_CONFIG.FORECAST_HOURS).map((rawPm25, idx) => {
     const iso = Array.isArray(times) && times[idx] ? times[idx] : '';
-    const parsedHour = iso ? Number(iso.slice(API_CONFIG.ISO_HOUR_START, API_CONFIG.ISO_HOUR_END)) : idx;
+    const parsedHour = iso
+      ? Number(iso.slice(API_CONFIG.ISO_HOUR_START, API_CONFIG.ISO_HOUR_END))
+      : idx;
     const hour = Number.isFinite(parsedHour) ? parsedHour : idx;
     const pm10Val = pm10Arr?.[idx];
     return {
@@ -55,7 +55,16 @@ function resolveFailureReason(error) {
   return 'Could not reach Open-Meteo (offline or service error).';
 }
 
-function selectFailureFallback(reason, { cached, manualPm25, locationName, roundedLat, roundedLon }) {
+function isUsablePm25(value) {
+  return (
+    value !== null && value !== undefined && Number.isFinite(Number(value)) && Number(value) >= 0
+  );
+}
+
+function selectFailureFallback(
+  reason,
+  { cached, manualPm25, locationName, roundedLat, roundedLon }
+) {
   if (cached && !cached.corrupted) {
     return {
       ...cached,
@@ -65,8 +74,13 @@ function selectFailureFallback(reason, { cached, manualPm25, locationName, round
       notice: `${reason} Showing previously cached forecast from ${cached.ageLabel}.`,
     };
   }
-  if (manualPm25 !== null && manualPm25 !== undefined && Number.isFinite(Number(manualPm25)) && Number(manualPm25) >= 0) {
-    const manual = buildManualAirData({ pm25: manualPm25, locationName, lat: roundedLat, lon: roundedLon });
+  if (isUsablePm25(manualPm25)) {
+    const manual = buildManualAirData({
+      pm25: manualPm25,
+      locationName,
+      lat: roundedLat,
+      lon: roundedLon,
+    });
     return {
       ...manual,
       notice: `${reason} Using your manual PM2.5 reading (${manual.currentPm25} µg/m³).`,
@@ -88,6 +102,45 @@ function extractWeatherSnapshot(wxRes) {
   };
 }
 
+function buildFreshCacheHit(cached, roundedLat, roundedLon) {
+  return {
+    ...cached,
+    mode: 'cached_fresh',
+    source: `${cached.source} (cached ${cached.ageLabel})`,
+    isFallback: false,
+    notice: `Loaded from 30-minute local cache (${cached.ageLabel}) for rounded coordinates (${roundedLat.toFixed(1)}°, ${roundedLon.toFixed(1)}°).`,
+  };
+}
+
+async function fetchLiveBundle({ roundedLat, roundedLon, locationName, signal }) {
+  const aqUrl = `${OPEN_METEO_HOSTS.airQuality}?latitude=${roundedLat}&longitude=${roundedLon}&hourly=pm2_5,pm10&forecast_days=1&timezone=auto`;
+  const wxUrl = `${OPEN_METEO_HOSTS.weather}?latitude=${roundedLat}&longitude=${roundedLon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m&timezone=auto`;
+  const [aqRes, wxOutcome] = await Promise.all([
+    fetchWithTimeout(aqUrl, signal),
+    fetchWithTimeout(wxUrl, signal).catch((wxErr) => ({ weatherError: wxErr })),
+  ]);
+
+  const hourlyData = normalizeHourlyResponse(aqRes);
+  const currentEntry = hourlyData.find((e) => e.hour === new Date().getHours()) || hourlyData[0];
+  const now = Date.now();
+  return {
+    mode: 'live',
+    locationName,
+    roundedLat,
+    roundedLon,
+    hourlyData,
+    currentPm25: currentEntry?.pm25 ?? 0,
+    weather: wxOutcome?.weatherError ? null : extractWeatherSnapshot(wxOutcome),
+    source: 'Open-Meteo Air Quality (CAMS CC BY 4.0) & Open-Meteo Weather',
+    fetchedAt: now,
+    timestampIso: new Date(now).toISOString(),
+    isFallback: false,
+    notice: wxOutcome?.weatherError
+      ? 'Live PM2.5 loaded; weather summary temporarily unavailable.'
+      : null,
+  };
+}
+
 /**
  * Fetch 24-hour CAMS PM2.5 forecast and current weather from Open-Meteo for rounded coordinates.
  * Falls back in order: cached data (with age) -> manual PM2.5 -> Sample Severe-Smog Day.
@@ -97,55 +150,26 @@ function extractWeatherSnapshot(wxRes) {
  * @returns {Promise<Object>} Resolved air-quality and weather payload.
  */
 export async function fetchAirAndWeather(lat, lon, options = {}) {
-  const { locationName = 'Selected Location', signal, forceRefresh = false, manualPm25 = null } = options;
+  const {
+    locationName = 'Selected Location',
+    signal,
+    forceRefresh = false,
+    manualPm25 = null,
+  } = options;
   const roundedLat = roundCoordinate(lat);
   const roundedLon = roundCoordinate(lon);
-
   const cached = readCachedAirData(roundedLat, roundedLon);
+
   if (cached && !cached.corrupted && cached.isFresh && !forceRefresh) {
-    return {
-      ...cached,
-      mode: 'cached_fresh',
-      source: `${cached.source} (cached ${cached.ageLabel})`,
-      isFallback: false,
-      notice: `Loaded from 30-minute local cache (${cached.ageLabel}) for rounded coordinates (${roundedLat.toFixed(1)}°, ${roundedLon.toFixed(1)}°).`,
-    };
+    return buildFreshCacheHit(cached, roundedLat, roundedLon);
   }
 
-  const aqUrl = `${OPEN_METEO_HOSTS.airQuality}?latitude=${roundedLat}&longitude=${roundedLon}&hourly=pm2_5,pm10&forecast_days=1&timezone=auto`;
-  const wxUrl = `${OPEN_METEO_HOSTS.weather}?latitude=${roundedLat}&longitude=${roundedLon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m&timezone=auto`;
-
   try {
-    const [aqRes, wxOutcome] = await Promise.all([
-      fetchWithTimeout(aqUrl, signal),
-      fetchWithTimeout(wxUrl, signal).catch((wxErr) => ({ weatherError: wxErr })),
-    ]);
-
-    const hourlyData = normalizeHourlyResponse(aqRes);
-    const currentHour = new Date().getHours();
-    const currentEntry = hourlyData.find((entry) => entry.hour === currentHour) || hourlyData[0];
-    const now = Date.now();
-    const payload = {
-      mode: 'live',
-      locationName,
-      roundedLat,
-      roundedLon,
-      hourlyData,
-      currentPm25: currentEntry?.pm25 ?? 0,
-      weather: wxOutcome?.weatherError ? null : extractWeatherSnapshot(wxOutcome),
-      source: 'Open-Meteo Air Quality (CAMS CC BY 4.0) & Open-Meteo Weather',
-      fetchedAt: now,
-      timestampIso: new Date(now).toISOString(),
-      isFallback: false,
-      notice: wxOutcome?.weatherError ? 'Live PM2.5 loaded; weather summary temporarily unavailable.' : null,
-    };
-
+    const payload = await fetchLiveBundle({ roundedLat, roundedLon, locationName, signal });
     writeCachedAirData(roundedLat, roundedLon, payload);
     return payload;
   } catch (error) {
-    if (error?.name === 'AbortError' && signal?.aborted) {
-      throw error;
-    }
+    if (error?.name === 'AbortError' && signal?.aborted) throw error;
     return selectFailureFallback(resolveFailureReason(error), {
       cached,
       manualPm25,

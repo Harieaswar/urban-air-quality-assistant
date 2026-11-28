@@ -26,6 +26,18 @@ module.exports = {
     eqeqeq: ['error', 'always'],
     'prefer-const': 'error',
     'no-var': 'error',
+    'no-nested-ternary': 'error',
+    'no-magic-numbers': [
+      'error',
+      {
+        ignore: [0, 1, -1, 2],
+        ignoreArrayIndexes: true,
+        ignoreDefaultValues: true,
+      },
+    ],
+    'max-lines': ['error', { max: 200 }],
+    'max-lines-per-function': ['error', { max: 40, skipBlankLines: true, skipComments: true }],
+    complexity: ['error', 10],
     'max-depth': ['error', 3],
     'max-params': ['error', 4],
     'import/order': [
@@ -36,4 +48,12 @@ module.exports = {
       },
     ],
   },
+  overrides: [
+    {
+      files: ['src/constants/**/*.js', 'src/state/initialState.js'],
+      rules: {
+        'no-magic-numbers': 'off',
+      },
+    },
+  ],
 };

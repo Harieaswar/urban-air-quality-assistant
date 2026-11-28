@@ -2,8 +2,15 @@
  * @fileoverview Action impact, payback, overlap guard, and sustainable alternatives ranker.
  */
 
-import { DEFAULTS, TIME_UNITS } from '../constants/index.js';
+import { BOUNDS, DEFAULTS, IMPACT_FACTORS, TIME_UNITS } from '../constants/index.js';
+import { roundToTenths } from '../utils/resolve.js';
 import { buildActionContext, resolveActionPatch } from './impactDispatch.js';
+
+const EFFORT_RANK = {
+  low: 1,
+  medium: IMPACT_FACTORS.MEDIUM_EFFORT_RANK,
+  high: IMPACT_FACTORS.HIGH_EFFORT_RANK,
+};
 
 /**
  * Compute payback period from typical upfront INR cost and annual INR savings.
@@ -16,12 +23,44 @@ export function computePayback(upfrontCostINR, annualSavingsINR) {
   const annual = Number(annualSavingsINR ?? 0);
   if (upfront <= 0) return { years: 0, label: 'Immediate (₹0 upfront)' };
   if (annual <= 0) return { years: null, label: 'Air/health benefit (no direct bill payback)' };
-  const years = Math.round((upfront / annual) * 10) / 10;
+  const years = roundToTenths(upfront / annual);
   if (years < 1) {
     const months = Math.max(1, Math.round(years * TIME_UNITS.MONTHS_PER_YEAR));
     return { years, label: `~${months} month${months > 1 ? 's' : ''}` };
   }
   return { years, label: `~${years} year${years > 1 ? 's' : ''}` };
+}
+
+const ZERO_RANGE = { low: 0, central: 0, high: 0 };
+const ZERO_COST = { min: 0, max: 0, typical: 0 };
+
+function buildFinancialSummary(action, moneySavedINR) {
+  const upfrontCostINR = action.upfrontCostINR || ZERO_COST;
+  return {
+    moneySavedINR,
+    moneyRangeINR: {
+      low: Math.round(moneySavedINR * DEFAULTS.billSavingsLowRatio),
+      central: moneySavedINR,
+      high: Math.round(moneySavedINR * DEFAULTS.billSavingsHighRatio),
+    },
+    upfrontCostINR,
+    payback: computePayback(upfrontCostINR, moneySavedINR),
+  };
+}
+
+function formatImpactPayload(action, patch) {
+  const moneySavedINR = patch.moneySavedINR ?? 0;
+  return {
+    co2SavedKg: patch.co2SavedKg ?? ZERO_RANGE,
+    ...buildFinancialSummary(action, moneySavedINR),
+    exposureChange:
+      patch.exposureChange || action.effectRange || 'Maintains cleaner indoor routine',
+    formula: patch.formula || '',
+    inputs: patch.inputs || {},
+    sources: patch.sources || [],
+    assumptions: patch.assumptions || [],
+    confidence: action.evidence || 'moderate',
+  };
 }
 
 /**
@@ -33,28 +72,38 @@ export function computePayback(upfrontCostINR, annualSavingsINR) {
  */
 export function calculateActionImpact(action, profile = {}, factors = []) {
   const ctx = buildActionContext(profile);
-  const upfrontCost = action.upfrontCostINR || { min: 0, max: 0, typical: 0 };
   const patch = resolveActionPatch(action, ctx, factors);
+  return formatImpactPayload(action, patch);
+}
 
-  const moneySavedINR = patch.moneySavedINR ?? 0;
-  return {
-    co2SavedKg: patch.co2SavedKg ?? { low: 0, central: 0, high: 0 },
-    moneySavedINR,
-    moneyRangeINR: {
-      low: Math.round(moneySavedINR * DEFAULTS.billSavingsLowRatio),
-      central: moneySavedINR,
-      high: Math.round(moneySavedINR * DEFAULTS.billSavingsHighRatio),
-    },
-    upfrontCostINR: upfrontCost,
-    payback: computePayback(upfrontCost, moneySavedINR),
-    exposureChange:
-      patch.exposureChange || action.effectRange || 'Maintains cleaner indoor routine',
-    formula: patch.formula || '',
-    inputs: patch.inputs || {},
-    sources: patch.sources || [],
-    assumptions: patch.assumptions || [],
-    confidence: action.evidence || 'moderate',
-  };
+function applyCategoryOverlapGuard(actionImpacts) {
+  const groups = {};
+  for (const item of actionImpacts) {
+    const cat = item.action.category;
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(item);
+  }
+
+  const overlaps = [];
+  const scale = DEFAULTS.overlapScaleFactor;
+  for (const [cat, group] of Object.entries(groups)) {
+    if (group.length <= 1) continue;
+    overlaps.push({
+      category: cat,
+      actions: group.map((g) => g.action.title),
+      note: `Overlap guard applied across ${group.length} ${cat} actions (subsequent CO₂e/savings scaled by ${scale}×).`,
+    });
+    for (let i = 1; i < group.length; i++) {
+      const prev = group[i].impact.co2SavedKg;
+      group[i].impact.co2SavedKg = {
+        low: Math.round(prev.low * scale),
+        central: Math.round(prev.central * scale),
+        high: Math.round(prev.high * scale),
+      };
+      group[i].impact.moneySavedINR = Math.round(group[i].impact.moneySavedINR * scale);
+    }
+  }
+  return overlaps;
 }
 
 /**
@@ -69,33 +118,7 @@ export function calculateCumulativeImpact(actions, profile = {}, factors = []) {
     action,
     impact: calculateActionImpact(action, profile, factors),
   }));
-
-  const overlaps = [];
-  const groups = {};
-  for (const ai of actionImpacts) {
-    const cat = ai.action.category;
-    if (!groups[cat]) groups[cat] = [];
-    groups[cat].push(ai);
-  }
-
-  for (const [cat, group] of Object.entries(groups)) {
-    if (group.length <= 1) continue;
-    overlaps.push({
-      category: cat,
-      actions: group.map((g) => g.action.title),
-      note: `Overlap guard applied across ${group.length} ${cat} actions (subsequent CO₂e/savings scaled by ${DEFAULTS.overlapScaleFactor}×).`,
-    });
-    for (let i = 1; i < group.length; i++) {
-      const k = DEFAULTS.overlapScaleFactor;
-      const c = group[i].impact.co2SavedKg;
-      group[i].impact.co2SavedKg = {
-        low: Math.round(c.low * k),
-        central: Math.round(c.central * k),
-        high: Math.round(c.high * k),
-      };
-      group[i].impact.moneySavedINR = Math.round(group[i].impact.moneySavedINR * k);
-    }
-  }
+  const overlaps = applyCategoryOverlapGuard(actionImpacts);
 
   return {
     totalCO2Saved: {
@@ -108,6 +131,23 @@ export function calculateCumulativeImpact(actions, profile = {}, factors = []) {
     overlaps,
   };
 }
+
+const RANK_COMPARATORS = {
+  payback: (a, b) =>
+    (a.impact.payback.years ?? BOUNDS.UNRANKED_PAYBACK_YEARS) -
+      (b.impact.payback.years ?? BOUNDS.UNRANKED_PAYBACK_YEARS) ||
+    b.impact.moneySavedINR - a.impact.moneySavedINR,
+  effort: (a, b) =>
+    (EFFORT_RANK[a.action.effort] || IMPACT_FACTORS.MEDIUM_EFFORT_RANK) -
+      (EFFORT_RANK[b.action.effort] || IMPACT_FACTORS.MEDIUM_EFFORT_RANK) ||
+    b.impact.co2SavedKg.central - a.impact.co2SavedKg.central,
+  exposure: (a, b) => {
+    const iaqA = Number(a.action.category === 'iaq' || a.action.category === 'cooking');
+    const iaqB = Number(b.action.category === 'iaq' || b.action.category === 'cooking');
+    return iaqB - iaqA || b.impact.co2SavedKg.central - a.impact.co2SavedKg.central;
+  },
+  emissions: (a, b) => b.impact.co2SavedKg.central - a.impact.co2SavedKg.central,
+};
 
 /**
  * Rank sustainable alternatives by emissions cut, exposure reduction, fastest payback, or lowest effort.
@@ -123,31 +163,11 @@ export function rankSustainableAlternatives(
   factors = [],
   rankBy = 'emissions'
 ) {
-  const effortRank = { low: 1, medium: 2, high: 3 };
   const isRenting = profile.rentalLimits === true || profile.rentalLimits === 'unknown';
+  const compare = RANK_COMPARATORS[rankBy] || RANK_COMPARATORS.emissions;
 
-  const candidates = actions
+  return actions
     .filter((a) => (!isRenting || a.rentalFriendly) && a.id !== 'indoor_plants')
-    .map((action) => ({ action, impact: calculateActionImpact(action, profile, factors) }));
-
-  return candidates.sort((a, b) => {
-    if (rankBy === 'payback') {
-      return (
-        (a.impact.payback.years ?? 999) - (b.impact.payback.years ?? 999) ||
-        b.impact.moneySavedINR - a.impact.moneySavedINR
-      );
-    }
-    if (rankBy === 'effort') {
-      return (
-        (effortRank[a.action.effort] || 2) - (effortRank[b.action.effort] || 2) ||
-        b.impact.co2SavedKg.central - a.impact.co2SavedKg.central
-      );
-    }
-    if (rankBy === 'exposure') {
-      const iaqA = a.action.category === 'iaq' || a.action.category === 'cooking' ? 1 : 0;
-      const iaqB = b.action.category === 'iaq' || b.action.category === 'cooking' ? 1 : 0;
-      return iaqB - iaqA || b.impact.co2SavedKg.central - a.impact.co2SavedKg.central;
-    }
-    return b.impact.co2SavedKg.central - a.impact.co2SavedKg.central;
-  });
+    .map((action) => ({ action, impact: calculateActionImpact(action, profile, factors) }))
+    .sort(compare);
 }

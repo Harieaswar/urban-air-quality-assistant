@@ -155,12 +155,6 @@
 .impact-totals-banner {
   margin-bottom: var(--space-md);
 }
-.impact-card {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-lg);
-}
 .impact-metric-val {
   font-size: var(--font-size-sm);
   font-weight: 600;

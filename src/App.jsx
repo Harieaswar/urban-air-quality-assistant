@@ -5,13 +5,7 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AppProvider } from '@/state';
-import {
-  LandingPage,
-  WizardPage,
-  ReportPage,
-  MethodologyPage,
-  SettingsPage,
-} from '@/pages';
+import { LandingPage, WizardPage, ReportPage, MethodologyPage, SettingsPage } from '@/pages';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Home', title: 'SmogGuard — Home & Live Air Monitor' },
@@ -21,15 +15,28 @@ const NAV_ITEMS = [
   { path: '/settings', label: 'Settings', title: 'SmogGuard — Settings & Data Control' },
 ];
 
-/**
- * Root application component wrapping routes in the persistent `AppProvider`.
- * @returns {JSX.Element} Application root.
- */
-export default function App() {
+function NavBar({ pathname }) {
   return (
-    <AppProvider>
-      <AppShell />
-    </AppProvider>
+    <header>
+      <nav className="nav no-print" aria-label="Main navigation">
+        <Link to="/" className="nav-logo">
+          🛡️ SmogGuard
+        </Link>
+        <ul className="nav-links">
+          {NAV_ITEMS.map((item) => (
+            <li key={item.path}>
+              <Link
+                to={item.path}
+                className={pathname === item.path ? 'active' : ''}
+                aria-current={pathname === item.path ? 'page' : undefined}
+              >
+                {item.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </header>
   );
 }
 
@@ -48,26 +55,7 @@ function AppShell() {
       <a href="#main-content" className="skip-link no-print">
         Skip to main content
       </a>
-      <header>
-        <nav className="nav no-print" aria-label="Main navigation">
-          <Link to="/" className="nav-logo">
-            🛡️ SmogGuard
-          </Link>
-          <ul className="nav-links">
-            {NAV_ITEMS.map((item) => (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className={location.pathname === item.path ? 'active' : ''}
-                  aria-current={location.pathname === item.path ? 'page' : undefined}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </header>
+      <NavBar pathname={location.pathname} />
       <main id="main-content" tabIndex={-1}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -78,5 +66,17 @@ function AppShell() {
         </Routes>
       </main>
     </>
+  );
+}
+
+/**
+ * Root application component wrapping routes in the persistent `AppProvider`.
+ * @returns {JSX.Element} Application root.
+ */
+export default function App() {
+  return (
+    <AppProvider>
+      <AppShell />
+    </AppProvider>
   );
 }

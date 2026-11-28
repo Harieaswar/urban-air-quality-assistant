@@ -2,8 +2,20 @@
  * @fileoverview Per-action impact formulas for mobility (metro, carpool, WFH) and household electricity (AC, LED, solar).
  */
 
-import { DEFAULTS } from '@/constants';
+import { DEFAULTS, IMPACT_FACTORS } from '@/constants';
 import { getFactorById } from '@/utils';
+
+const METRO_MODE_FACTOR = {
+  car: 'car_petrol',
+  car_petrol: 'car_petrol',
+  car_diesel: 'car_diesel',
+};
+
+const WFH_MODE_FACTOR = {
+  car: 'car_petrol',
+  car_petrol: 'car_petrol',
+  bus: 'bus_public',
+};
 
 /**
  * Compute CO₂e, fuel/fare savings, and formula metadata for switching commute to metro.
@@ -13,12 +25,7 @@ import { getFactorById } from '@/utils';
  */
 export function impactMetro(ctx, factors) {
   const annualKm = ctx.km * 2 * ctx.days * DEFAULTS.weeksPerYear;
-  const fId =
-    ctx.commuteMode === 'car' || ctx.commuteMode === 'car_petrol'
-      ? 'car_petrol'
-      : ctx.commuteMode === 'car_diesel'
-        ? 'car_diesel'
-        : 'two_wheeler_petrol';
+  const fId = METRO_MODE_FACTOR[ctx.commuteMode] || 'two_wheeler_petrol';
   const curr = getFactorById(factors, fId);
   const metro = getFactorById(factors, 'metro_rail');
   if (!curr || !metro) return {};
@@ -55,12 +62,14 @@ export function impactCarpool(ctx, factors) {
   if (!factor) return {};
   return {
     co2SavedKg: {
-      low: Math.round(annualKm * factor.low * 0.5),
-      central: Math.round(annualKm * factor.value * 0.67),
-      high: Math.round(annualKm * factor.high * 0.75),
+      low: Math.round(annualKm * factor.low * IMPACT_FACTORS.CARPOOL_LOW_SHARE),
+      central: Math.round(annualKm * factor.value * IMPACT_FACTORS.CARPOOL_CENTRAL_SHARE),
+      high: Math.round(annualKm * factor.high * IMPACT_FACTORS.CARPOOL_HIGH_SHARE),
     },
     moneySavedINR: Math.round(
-      (annualKm / DEFAULTS.carKmPerLitre) * DEFAULTS.petrolRatePerLitre * 0.67
+      (annualKm / DEFAULTS.carKmPerLitre) *
+        DEFAULTS.petrolRatePerLitre *
+        IMPACT_FACTORS.CARPOOL_CENTRAL_SHARE
     ),
     exposureChange: 'Reduces urban corridor tailpipe contribution',
     formula: 'Annual km × car factor × (1 − 1/3 occupants)',
@@ -77,13 +86,9 @@ export function impactCarpool(ctx, factors) {
  * @returns {Object} Impact patch for wfh_days.
  */
 export function impactWfh(ctx, factors) {
-  const annualKmSaved = ctx.km * 2 * Math.min(2, ctx.days) * DEFAULTS.weeksPerYear;
-  const fId =
-    ctx.commuteMode === 'car' || ctx.commuteMode === 'car_petrol'
-      ? 'car_petrol'
-      : ctx.commuteMode === 'bus'
-        ? 'bus_public'
-        : 'two_wheeler_petrol';
+  const wfhDays = Math.min(2, ctx.days);
+  const annualKmSaved = ctx.km * 2 * wfhDays * DEFAULTS.weeksPerYear;
+  const fId = WFH_MODE_FACTOR[ctx.commuteMode] || 'two_wheeler_petrol';
   const factor = getFactorById(factors, fId);
   if (!factor || ['wfh', 'walk', 'bicycle'].includes(ctx.commuteMode)) {
     return { formula: 'Skipped for zero-commute mode' };
@@ -101,7 +106,7 @@ export function impactWfh(ctx, factors) {
         : Math.round((annualKmSaved / kmPerL) * DEFAULTS.petrolRatePerLitre),
     exposureChange: 'Eliminates traffic-corridor PM2.5 inhalation on 1–2 high-smog days/week',
     formula: 'Saved annual commute km (2 days/wk) × mode factor',
-    inputs: { commuteKm: ctx.km, commuteMode: ctx.commuteMode, wfhDays: Math.min(2, ctx.days) },
+    inputs: { commuteKm: ctx.km, commuteMode: ctx.commuteMode, wfhDays },
     sources: [`${factor.source} (${factor.year})`],
     assumptions: ['Replaces up to 2 commute days/week during smog episodes'],
   };
@@ -177,9 +182,9 @@ export function impactSolarWaterHeater(_ctx, factors) {
   const kwhSaved = Math.round(geyser.value * DEFAULTS.solarHeaterOffsetRatio);
   return {
     co2SavedKg: {
-      low: Math.round(geyser.low * 0.8 * grid.low),
+      low: Math.round(geyser.low * IMPACT_FACTORS.SOLAR_LOW_OFFSET_RATIO * grid.low),
       central: Math.round(kwhSaved * grid.value),
-      high: Math.round(geyser.high * 0.9 * grid.high),
+      high: Math.round(geyser.high * IMPACT_FACTORS.SOLAR_HIGH_OFFSET_RATIO * grid.high),
     },
     moneySavedINR: Math.round(kwhSaved * DEFAULTS.electricityRatePerKwh),
     formula: '85% of electric geyser kWh × grid factor',

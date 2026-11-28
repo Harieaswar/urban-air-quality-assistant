@@ -2,9 +2,14 @@
  * @fileoverview Pure room-wise air purifier CADR sizing and clean-room selection calculator.
  */
 
-import { DEFAULTS, CONSERVATIVE_UNKNOWNS } from '../constants/index.js';
+import {
+  BOUNDS,
+  DEFAULTS,
+  CONSERVATIVE_UNKNOWNS,
+  GRID_FACTOR_KG_PER_KWH,
+} from '../constants/index.js';
+import { roundToTenths } from '../utils/resolve.js';
 
-const GRID_FACTOR_INDIA = 0.82;
 const CLEAN_ROOM_WEIGHTS = {
   bedroom: 40,
   kids_room: 40,
@@ -20,6 +25,28 @@ const CLEAN_ROOM_WEIGHTS = {
   largeBonus: 5,
 };
 
+const VENTILATION_SCORE_MAP = {
+  poor: CLEAN_ROOM_WEIGHTS.poorVent,
+  moderate: CLEAN_ROOM_WEIGHTS.moderateVent,
+  good: CLEAN_ROOM_WEIGHTS.goodVent,
+};
+
+function resolvePositiveDimension(value, fallback) {
+  if (value === 'unknown' || value === null || value === undefined || Number(value) <= 0) {
+    return fallback;
+  }
+  return Number(value);
+}
+
+function buildPurifierAssumptions(areaSqM, ceilingHeightM, roomVolume, targetACH) {
+  return [
+    `Room volume: ${areaSqM} m² × ${ceilingHeightM} m = ${roomVolume} m³`,
+    `Target: ${targetACH} air changes/hour (ASHRAE/clinical HEPA PM2.5 clean-room guidance)`,
+    `Power draw: ${DEFAULTS.purifierWatts}W for ${DEFAULTS.purifierHoursPerDay} hrs/day at ₹${DEFAULTS.electricityRatePerKwh}/kWh`,
+    `Grid factor: ${GRID_FACTOR_KG_PER_KWH} kgCO₂e/kWh (CEA India v18, 2023)`,
+  ];
+}
+
 /**
  * Calculate HEPA purifier sizing, achieved ACH, monthly bill cost, and annual grid emissions.
  * @param {number|string} roomSizeSqM - Room floor area in square meters (or `'unknown'`).
@@ -32,60 +59,37 @@ export function calculatePurifierSizing(
   ceilingHeightM = DEFAULTS.ceilingHeightM,
   targetACH = DEFAULTS.targetACH
 ) {
-  const safeArea =
-    roomSizeSqM === 'unknown' ||
-    roomSizeSqM === null ||
-    roomSizeSqM === undefined ||
-    Number(roomSizeSqM) <= 0
-      ? CONSERVATIVE_UNKNOWNS.roomAreaSqM
-      : Number(roomSizeSqM);
-  const safeHeight =
-    ceilingHeightM === 'unknown' ||
-    ceilingHeightM === null ||
-    ceilingHeightM === undefined ||
-    Number(ceilingHeightM) <= 0
-      ? DEFAULTS.ceilingHeightM
-      : Number(ceilingHeightM);
-
-  const roomVolume = safeArea * safeHeight;
-  const recommendedCADR = Math.round(roomVolume * targetACH);
-  const cadrRange = {
-    min: Math.round(recommendedCADR * DEFAULTS.cadrRangeLowRatio),
-    max: Math.round(recommendedCADR * DEFAULTS.cadrRangeHighRatio),
-  };
-
-  const dailyKwh = (DEFAULTS.purifierWatts / 1000) * DEFAULTS.purifierHoursPerDay;
-  const runningCostPerMonth = Math.round(
-    dailyKwh * DEFAULTS.daysPerMonth * DEFAULTS.electricityRatePerKwh
+  const safeArea = roundToTenths(
+    resolvePositiveDimension(roomSizeSqM, CONSERVATIVE_UNKNOWNS.roomAreaSqM)
   );
-  const annualEmissions = Math.round(dailyKwh * DEFAULTS.daysPerYear * GRID_FACTOR_INDIA);
+  const safeHeight = roundToTenths(
+    resolvePositiveDimension(ceilingHeightM, DEFAULTS.ceilingHeightM)
+  );
+  const roomVolume = roundToTenths(safeArea * safeHeight);
+  const recommendedCADR = Math.round(roomVolume * targetACH);
+  const dailyKwh = (DEFAULTS.purifierWatts / BOUNDS.WATTS_PER_KW) * DEFAULTS.purifierHoursPerDay;
 
   return {
-    areaSqM: Math.round(safeArea * 10) / 10,
-    ceilingHeightM: Math.round(safeHeight * 10) / 10,
-    roomVolume: Math.round(roomVolume * 10) / 10,
+    areaSqM: safeArea,
+    ceilingHeightM: safeHeight,
+    roomVolume,
     recommendedCADR,
-    cadrRange,
+    cadrRange: {
+      min: Math.round(recommendedCADR * DEFAULTS.cadrRangeLowRatio),
+      max: Math.round(recommendedCADR * DEFAULTS.cadrRangeHighRatio),
+    },
     achievedACH: targetACH,
-    runningCostPerMonth,
-    annualEmissions,
-    assumptions: [
-      `Room volume: ${Math.round(safeArea * 10) / 10} m² × ${Math.round(safeHeight * 10) / 10} m = ${Math.round(roomVolume * 10) / 10} m³`,
-      `Target: ${targetACH} air changes/hour (ASHRAE/clinical HEPA PM2.5 clean-room guidance)`,
-      `Power draw: ${DEFAULTS.purifierWatts}W for ${DEFAULTS.purifierHoursPerDay} hrs/day at ₹${DEFAULTS.electricityRatePerKwh}/kWh`,
-      `Grid factor: ${GRID_FACTOR_INDIA} kgCO₂e/kWh (CEA India v18, 2023)`,
-    ],
+    runningCostPerMonth: Math.round(
+      dailyKwh * DEFAULTS.daysPerMonth * DEFAULTS.electricityRatePerKwh
+    ),
+    annualEmissions: Math.round(dailyKwh * DEFAULTS.daysPerYear * GRID_FACTOR_KG_PER_KWH),
+    assumptions: buildPurifierAssumptions(safeArea, safeHeight, roomVolume, targetACH),
   };
 }
 
 function scoreRoomForCleanRoom(room, sizing) {
   const typeScore = CLEAN_ROOM_WEIGHTS[room.type] ?? CLEAN_ROOM_WEIGHTS.defaultType;
-  const sealScore =
-    room.ventilation === 'poor'
-      ? CLEAN_ROOM_WEIGHTS.poorVent
-      : room.ventilation === 'moderate'
-        ? CLEAN_ROOM_WEIGHTS.moderateVent
-        : CLEAN_ROOM_WEIGHTS.goodVent;
+  const sealScore = VENTILATION_SCORE_MAP[room.ventilation] ?? CLEAN_ROOM_WEIGHTS.goodVent;
   const sensitiveScore = room.hasSensitiveOccupant ? CLEAN_ROOM_WEIGHTS.sensitiveBonus : 0;
   const areaScore =
     sizing.areaSqM <= CLEAN_ROOM_WEIGHTS.compactRoomCapSqM

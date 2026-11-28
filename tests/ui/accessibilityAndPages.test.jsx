@@ -121,7 +121,6 @@ describe('Accessibility (jest-axe) & Full Page Coverage', () => {
   });
 
   it('exercises SettingsPage theme toggle, AQI scale, invalid JSON import, restart, and delete data', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     renderAt('/settings');
 
     // Theme switch to Solid
@@ -136,9 +135,8 @@ describe('Accessibility (jest-axe) & Full Page Coverage', () => {
     const badFile = new File(['{bad-json'], 'bad.json', { type: 'application/json' });
     fireEvent.change(fileInput, { target: { files: [badFile] } });
     await waitFor(() => {
-      expect(screen.getByText(/Invalid file format/i)).toBeInTheDocument();
+      expect(screen.getByRole('alert')).toHaveTextContent(/Invalid file format/i);
     });
-    expect(warnSpy).toHaveBeenCalled();
 
     // Delete all data confirmation
     fireEvent.click(screen.getByRole('button', { name: /Delete all my data/i }));

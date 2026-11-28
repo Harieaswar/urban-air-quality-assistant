@@ -1,7 +1,6 @@
 /**
- * @fileoverview Barrel exports for application state, store provider, and selectors.
+ * @fileoverview Barrel exports for application store provider and selectors.
  */
 
-export * from './initialState.js';
-export { appReducer, loadPersistedState, persistState } from './sessionStore.js';
+export { selectCalculatorProfile } from './initialState.js';
 export { AppProvider, useAppStore } from './AppContext.jsx';

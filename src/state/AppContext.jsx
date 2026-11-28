@@ -9,7 +9,8 @@ import {
   buildManualAirData,
   CACHE_KEY_PREFIX,
 } from '../services/openMeteo.js';
-import { appReducer, loadPersistedState, persistState, STORAGE_KEY } from './sessionStore.js';
+import { STORAGE_KEY } from './initialState.js';
+import { appReducer, loadPersistedState, persistState } from './sessionStore.js';
 
 const AppContext = createContext(null);
 
@@ -23,22 +24,7 @@ function clearAppStorageKeys() {
   cacheKeys.forEach((k) => localStorage.removeItem(k));
 }
 
-/**
- * Application state provider managing persistence, theme synchronization, and Open-Meteo fetching.
- * @param {{ children: React.ReactNode }} props - Child tree.
- * @returns {JSX.Element} Provider element.
- */
-export function AppProvider({ children }) {
-  const [state, dispatch] = useReducer(appReducer, null, loadPersistedState);
-
-  useEffect(() => {
-    persistState(state);
-  }, [state]);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', state.preferences.theme || 'dark');
-  }, [state.preferences.theme]);
-
+function useAirActions(state, dispatch) {
   const loadLocationAir = useCallback(
     async ({ lat, lon, name, forceRefresh = false, manualPm25 = null }) => {
       dispatch({ type: 'SET_AIR_LOADING', loading: true, error: null });
@@ -50,7 +36,7 @@ export function AppProvider({ children }) {
       dispatch({ type: 'SET_AIR_DATA', data, error: data.isFallback ? data.notice : null });
       return data;
     },
-    []
+    [dispatch]
   );
 
   const loadSampleSevereSmog = useCallback(() => {
@@ -64,7 +50,7 @@ export function AppProvider({ children }) {
       payload: { enabled: false, value: null, calibratedAt: null },
     });
     dispatch({ type: 'SET_AIR_DATA', data: sample, error: null });
-  }, []);
+  }, [dispatch]);
 
   const applyManualAirReading = useCallback(
     (pm25) => {
@@ -76,8 +62,28 @@ export function AppProvider({ children }) {
       });
       dispatch({ type: 'SET_AIR_DATA', data: manual, error: null });
     },
-    [state.location.name, state.location.lat, state.location.lon]
+    [dispatch, state.location.name, state.location.lat, state.location.lon]
   );
+
+  return { loadLocationAir, loadSampleSevereSmog, applyManualAirReading };
+}
+
+/**
+ * Application state provider managing persistence, theme synchronization, and Open-Meteo fetching.
+ * @param {{ children: React.ReactNode }} props - Child tree.
+ * @returns {JSX.Element} Provider element.
+ */
+export function AppProvider({ children }) {
+  const [state, dispatch] = useReducer(appReducer, null, loadPersistedState);
+  const airActions = useAirActions(state, dispatch);
+
+  useEffect(() => {
+    persistState(state);
+  }, [state]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', state.preferences.theme || 'dark');
+  }, [state.preferences.theme]);
 
   const deleteAllData = useCallback(() => {
     try {
@@ -89,16 +95,7 @@ export function AppProvider({ children }) {
   }, []);
 
   return (
-    <AppContext.Provider
-      value={{
-        state,
-        dispatch,
-        loadLocationAir,
-        loadSampleSevereSmog,
-        applyManualAirReading,
-        deleteAllData,
-      }}
-    >
+    <AppContext.Provider value={{ state, dispatch, ...airActions, deleteAllData }}>
       {children}
     </AppContext.Provider>
   );

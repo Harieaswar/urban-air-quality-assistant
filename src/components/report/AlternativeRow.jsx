@@ -3,7 +3,32 @@
  */
 
 import React, { useState } from 'react';
+import { BOUNDS } from '@/constants';
 import { formatCO2, formatINR } from '@/utils/format';
+
+function MathDetailRow({ impact }) {
+  return (
+    <tr className="math-detail-row">
+      <td colSpan={BOUNDS.REPORT_COL_SPAN}>
+        <div className="show-math-content">
+          <p>
+            <strong>Formula:</strong> {impact.formula}
+          </p>
+          {impact.sources?.length > 0 && (
+            <p>
+              <strong>Sources:</strong> {impact.sources.join(' | ')}
+            </p>
+          )}
+          {impact.assumptions?.length > 0 && (
+            <p>
+              <strong>Assumptions:</strong> {impact.assumptions.join('; ')}
+            </p>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}
 
 /**
  * Render one alternative row and its collapsible calculation disclosure row.
@@ -37,27 +62,7 @@ export default function AlternativeRow({ action, impact }) {
         </td>
         <td>{impact.payback.label}</td>
       </tr>
-      {showMath && (
-        <tr className="math-detail-row">
-          <td colSpan={5}>
-            <div className="show-math-content">
-              <p>
-                <strong>Formula:</strong> {impact.formula}
-              </p>
-              {impact.sources?.length > 0 && (
-                <p>
-                  <strong>Sources:</strong> {impact.sources.join(' | ')}
-                </p>
-              )}
-              {impact.assumptions?.length > 0 && (
-                <p>
-                  <strong>Assumptions:</strong> {impact.assumptions.join('; ')}
-                </p>
-              )}
-            </div>
-          </td>
-        </tr>
-      )}
+      {showMath && <MathDetailRow impact={impact} />}
     </>
   );
 }

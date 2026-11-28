@@ -5,8 +5,85 @@
 import React from 'react';
 import LocationSearch from '@/components/air/LocationSearch';
 import ChoiceGroup from '@/components/wizard/ChoiceGroup';
-import { CONSERVATIVE_UNKNOWNS } from '@/constants';
+import { BOUNDS, CONSERVATIVE_UNKNOWNS } from '@/constants';
 import { sanitizeInput } from '@/utils/sanitize';
+
+const HOME_TYPE_OPTIONS = [
+  { value: 'apartment', label: 'Apartment / Flat', icon: '🏢' },
+  { value: 'house', label: 'Independent House', icon: '🏠' },
+  { value: 'hostel', label: 'Hostel / PG', icon: '🛏️' },
+];
+
+const COOLING_OPTIONS = [
+  { value: 'ac', label: 'Air Conditioner (AC)', icon: '❄️' },
+  { value: 'fan', label: 'Ceiling / Pedestal Fan', icon: '🌀' },
+  { value: 'cooler', label: 'Desert / Evaporative Cooler', icon: '💧' },
+  { value: 'none', label: 'None / Natural airflow', icon: '🌬️' },
+];
+
+const RENTAL_OPTIONS = [
+  { value: 'rent', label: 'Renting (keep changes portable)', icon: '🔑' },
+  { value: 'own', label: 'Own home (permanent upgrades okay)', icon: '🏡' },
+];
+
+const RENTAL_DISPLAY_MAP = new Map([
+  [true, 'rent'],
+  [false, 'own'],
+]);
+const RENTAL_STORE_MAP = new Map([
+  ['rent', true],
+  ['own', false],
+]);
+
+function HomeAndCoolingChoices({ location, errors, update }) {
+  const cleanOther = (txt) => sanitizeInput(txt, BOUNDS.SHORT_TEXT_MAX_LEN);
+  return (
+    <>
+      <ChoiceGroup
+        id="homeType"
+        label="Home type"
+        options={HOME_TYPE_OPTIONS}
+        value={location.homeType}
+        otherValue={location.homeTypeOther}
+        onChange={(val) => update({ homeType: val })}
+        onOtherChange={(txt) => update({ homeTypeOther: cleanOther(txt) })}
+        conservativeHint={`Treated as ${CONSERVATIVE_UNKNOWNS.homeType}.`}
+        error={errors.homeType}
+      />
+      <ChoiceGroup
+        id="cooling"
+        label="Primary cooling / heating"
+        options={COOLING_OPTIONS}
+        value={location.cooling}
+        otherValue={location.coolingOther}
+        onChange={(val) => update({ cooling: val })}
+        onOtherChange={(txt) => update({ coolingOther: cleanOther(txt) })}
+        conservativeHint="Assumes AC recirculation check applies."
+        error={errors.cooling}
+      />
+    </>
+  );
+}
+
+function RentalStatusChoice({ location, rentalValue, errors, update }) {
+  return (
+    <ChoiceGroup
+      id="rentalLimits"
+      label="Home ownership / rental restrictions"
+      options={RENTAL_OPTIONS}
+      value={rentalValue}
+      otherValue={location.rentalLimitsOther}
+      onChange={(val) =>
+        update({ rentalLimits: RENTAL_STORE_MAP.has(val) ? RENTAL_STORE_MAP.get(val) : val })
+      }
+      onOtherChange={(txt) =>
+        update({ rentalLimitsOther: sanitizeInput(txt, BOUNDS.SHORT_TEXT_MAX_LEN) })
+      }
+      conservativeHint="Filters recommendations to rental-friendly options."
+      error={errors.rentalLimits}
+    />
+  );
+}
 
 /**
  * Render Step 1 (Location & Home Setup) wizard controls.
@@ -14,12 +91,10 @@ import { sanitizeInput } from '@/utils/sanitize';
  * @returns {JSX.Element} Step 1 fields.
  */
 export default function StepLocation({ location, errors, dispatch, loadLocationAir, headingRef }) {
-  const rentalValue =
-    location.rentalLimits === true
-      ? 'rent'
-      : location.rentalLimits === false
-        ? 'own'
-        : location.rentalLimits;
+  const update = (payload) => dispatch({ type: 'UPDATE_LOCATION', payload });
+  const rentalValue = RENTAL_DISPLAY_MAP.has(location.rentalLimits)
+    ? RENTAL_DISPLAY_MAP.get(location.rentalLimits)
+    : location.rentalLimits;
 
   return (
     <div className="wizard-step-body">
@@ -33,7 +108,7 @@ export default function StepLocation({ location, errors, dispatch, loadLocationA
         errorId="step1-location-error"
         hasError={Boolean(errors.location)}
         onSelectLocation={async ({ name, lat, lon }) => {
-          dispatch({ type: 'UPDATE_LOCATION', payload: { name, lat, lon } });
+          update({ name, lat, lon });
           await loadLocationAir({ lat, lon, name });
         }}
       />
@@ -42,67 +117,12 @@ export default function StepLocation({ location, errors, dispatch, loadLocationA
           {errors.location}
         </p>
       )}
-
-      <ChoiceGroup
-        id="homeType"
-        label="Home type"
-        options={[
-          { value: 'apartment', label: 'Apartment / Flat', icon: '🏢' },
-          { value: 'house', label: 'Independent House', icon: '🏠' },
-          { value: 'hostel', label: 'Hostel / PG', icon: '🛏️' },
-        ]}
-        value={location.homeType}
-        otherValue={location.homeTypeOther}
-        onChange={(val) => dispatch({ type: 'UPDATE_LOCATION', payload: { homeType: val } })}
-        onOtherChange={(txt) =>
-          dispatch({ type: 'UPDATE_LOCATION', payload: { homeTypeOther: sanitizeInput(txt, 80) } })
-        }
-        conservativeHint={`Treated as ${CONSERVATIVE_UNKNOWNS.homeType}.`}
-        error={errors.homeType}
-      />
-
-      <ChoiceGroup
-        id="cooling"
-        label="Primary cooling / heating"
-        options={[
-          { value: 'ac', label: 'Air Conditioner (AC)', icon: '❄️' },
-          { value: 'fan', label: 'Ceiling / Pedestal Fan', icon: '🌀' },
-          { value: 'cooler', label: 'Desert / Evaporative Cooler', icon: '💧' },
-          { value: 'none', label: 'None / Natural airflow', icon: '🌬️' },
-        ]}
-        value={location.cooling}
-        otherValue={location.coolingOther}
-        onChange={(val) => dispatch({ type: 'UPDATE_LOCATION', payload: { cooling: val } })}
-        onOtherChange={(txt) =>
-          dispatch({ type: 'UPDATE_LOCATION', payload: { coolingOther: sanitizeInput(txt, 80) } })
-        }
-        conservativeHint="Assumes AC recirculation check applies."
-        error={errors.cooling}
-      />
-
-      <ChoiceGroup
-        id="rentalLimits"
-        label="Home ownership / rental restrictions"
-        options={[
-          { value: 'rent', label: 'Renting (keep changes portable)', icon: '🔑' },
-          { value: 'own', label: 'Own home (permanent upgrades okay)', icon: '🏡' },
-        ]}
-        value={rentalValue}
-        otherValue={location.rentalLimitsOther}
-        onChange={(val) =>
-          dispatch({
-            type: 'UPDATE_LOCATION',
-            payload: { rentalLimits: val === 'rent' ? true : val === 'own' ? false : val },
-          })
-        }
-        onOtherChange={(txt) =>
-          dispatch({
-            type: 'UPDATE_LOCATION',
-            payload: { rentalLimitsOther: sanitizeInput(txt, 80) },
-          })
-        }
-        conservativeHint="Filters recommendations to rental-friendly options."
-        error={errors.rentalLimits}
+      <HomeAndCoolingChoices location={location} errors={errors} update={update} />
+      <RentalStatusChoice
+        location={location}
+        rentalValue={rentalValue}
+        errors={errors}
+        update={update}
       />
     </div>
   );
